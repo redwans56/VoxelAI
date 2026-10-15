@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 480" width="100%" height="480">
+  <defs>
+    <linearGradient id="bgArch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+    <linearGradient id="cardBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0369a1" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="cardPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6d28d9" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <linearGradient id="cardGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <rect width="960" height="480" rx="12" fill="url(#bgArch)" stroke="#1e293b" stroke-width="2" />
+
+  <!-- Title -->
+  <text x="480" y="45" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="20" font-weight="900" fill="#f8fafc" letter-spacing="2">VOXELAI DUAL-TIER ENGINE ARCHITECTURE</text>
+  <text x="480" y="68" text-anchor="middle" font-family="'Segoe UI', monospace" font-size="12" fill="#64748b">MULTITHREADED WORLD PIPELINE &amp; HIERARCHICAL REINFORCEMENT LEARNING</text>
+
+  <!-- Left: World Simulation Pipeline -->
+  <g transform="translate(60, 100)">
+    <rect width="380" height="340" rx="10" fill="#0f172a" stroke="#0284c7" stroke-width="1.5" filter="url(#shadow)" />
+    <rect x="0" y="0" width="380" height="38" rx="10" fill="url(#cardBlue)" />
+    <text x="190" y="24" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="14" font-weight="bold" fill="#fff">TIER 1: PROCEDURAL VOXEL ENGINE</text>
+
+    <!-- Node 1: Terrain Gen -->
+    <rect x="25" y="60" width="330" height="48" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1" />
+    <text x="40" y="82" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#f1f5f9">TerrainGenerator (Simplex / Perlin Noise)</text>
+    <text x="40" y="98" font-family="'Segoe UI', monospace" font-size="11" fill="#94a3b8">Continentalness, Caves, Ore Veins, Biomes</text>
+
+    <!-- Arrow Down -->
+    <line x1="190" y1="108" x2="190" y2="128" stroke="#38bdf8" stroke-width="2" />
+    <polygon points="186,128 194,128 190,134" fill="#38bdf8" />
+
+    <!-- Node 2: Light Engine -->
+    <rect x="25" y="135" width="330" height="48" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1" />
+    <text x="40" y="157" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#f1f5f9">Flood-Fill LightEngine (Sunlight &amp; Torch)</text>
+    <text x="40" y="173" font-family="'Segoe UI', monospace" font-size="11" fill="#94a3b8">BakeLevel 0-15, Cellular Automata Propagation</text>
+
+    <!-- Arrow Down -->
+    <line x1="190" y1="183" x2="190" y2="203" stroke="#38bdf8" stroke-width="2" />
+    <polygon points="186,203 194,203 190,209" fill="#38bdf8" />
+
+    <!-- Node 3: Mesh Builder -->
+    <rect x="25" y="210" width="330" height="48" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1" />
+    <text x="40" y="232" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#f1f5f9">MeshBuilder (Culled Faces &amp; Ambient Occlusion)</text>
+    <text x="40" y="248" font-family="'Segoe UI', monospace" font-size="11" fill="#94a3b8">Chunk Staging Pools • 131,072-vertex Buffers</text>
+
+    <!-- Arrow Down -->
+    <line x1="190" y1="258" x2="190" y2="278" stroke="#38bdf8" stroke-width="2" />
+    <polygon points="186,278 194,278 190,284" fill="#38bdf8" />
+
+    <!-- Node 4: Win32 GL Render -->
+    <rect x="25" y="285" width="330" height="40" rx="6" fill="#0369a1" />
+    <text x="190" y="310" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#fff">Win32 OpenGL Hardware Rendering Context</text>
+  </g>
+
+  <!-- Right: AI Decision Pipeline -->
+  <g transform="translate(520, 100)">
+    <rect width="380" height="340" rx="10" fill="#0f172a" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)" />
+    <rect x="0" y="0" width="380" height="38" rx="10" fill="url(#cardPurple)" />
+    <text x="190" y="24" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="14" font-weight="bold" fill="#fff">TIER 2: HIERARCHICAL REINFORCEMENT AI</text>
+
+    <!-- Node A: Genetic Traits -->
+    <rect x="25" y="60" width="330" height="48" rx="6" fill="#1e293b" stroke="#a78bfa" stroke-width="1" />
+    <text x="40" y="82" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#f1f5f9">12-Gene Neuroevolutionary Genome</text>
+    <text x="40" y="98" font-family="'Segoe UI', monospace" font-size="11" fill="#c4b5fd">Aggression, Curiosity, Caution, Architect...</text>
+
+    <!-- Arrow Down -->
+    <line x1="190" y1="108" x2="190" y2="128" stroke="#a78bfa" stroke-width="2" />
+    <polygon points="186,128 194,128 190,134" fill="#a78bfa" />
+
+    <!-- Node B: Q-Table Policy -->
+    <rect x="25" y="135" width="330" height="48" rx="6" fill="#1e293b" stroke="#a78bfa" stroke-width="1" />
+    <text x="40" y="157" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#f1f5f9">14-State Tabular Q-Learning Matrix</text>
+    <text x="40" y="173" font-family="'Segoe UI', monospace" font-size="11" fill="#c4b5fd">Q(s,a) &lt;- Q(s,a) + alpha[r + gamma max Q - Q]</text>
+
+    <!-- Arrow Down -->
+    <line x1="190" y1="183" x2="190" y2="203" stroke="#a78bfa" stroke-width="2" />
+    <polygon points="186,203 194,203 190,209" fill="#a78bfa" />
+
+    <!-- Node C: Autonomous Behavior -->
+    <rect x="25" y="210" width="330" height="48" rx="6" fill="#1e293b" stroke="#a78bfa" stroke-width="1" />
+    <text x="40" y="232" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#f1f5f9">Autonomous Behavior &amp; Hazard Memory</text>
+    <text x="40" y="248" font-family="'Segoe UI', monospace" font-size="11" fill="#c4b5fd">Pathfinding, Mining, Placement, Fleeing</text>
+
+    <!-- Arrow Down -->
+    <line x1="190" y1="258" x2="190" y2="278" stroke="#a78bfa" stroke-width="2" />
+    <polygon points="186,278 194,278 190,284" fill="#a78bfa" />
+
+    <!-- Node D: Evolution Tournament -->
+    <rect x="25" y="285" width="330" height="40" rx="6" fill="#6d28d9" />
+    <text x="190" y="310" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="bold" fill="#fff">Tournament Selection, Crossover &amp; Mutation</text>
+  </g>
+
+  <!-- Center Bridge Interaction -->
+  <line x1="440" y1="270" x2="520" y2="270" stroke="#34d399" stroke-width="2" stroke-dasharray="4,4" />
+  <text x="480" y="260" text-anchor="middle" font-family="'Segoe UI', monospace" font-size="10" fill="#34d399">ACTUATE / SENSE</text>
+</svg>

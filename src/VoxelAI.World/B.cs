@@ -1,0 +1,30 @@
+namespace VoxelAI.World
+{
+	public enum B : byte
+	{
+		Air,
+		Grass,
+		Dirt,
+		Stone,
+		Cobble,
+		Sand,
+		Gravel,
+		Log,
+		Leaves,
+		Planks,
+		Glass,
+		Brick,
+		Water,
+		Lava,
+		Snow,
+		Cactus,
+		CoalOre,
+		IronOre,
+		GoldOre,
+		DiamondOre,
+		Bedrock,
+		CraftingTable,
+		Furnace,
+		Glowstone
+	}
+}

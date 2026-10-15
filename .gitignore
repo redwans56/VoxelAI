@@ -1,0 +1,25 @@
+# Visual Studio / Rider / Omnisharp cache
+.vs/
+.idea/
+.vscode/
+*.user
+*.userprefs
+*.suo
+*.pidb
+*.booproj
+*.svd
+
+# Build outputs (intermediate)
+obj/
+bin/Debug/
+src/bin/
+src/obj/
+
+# Logs and crash dumps
+*.log
+*.dmp
+*.crash
+
+# Keep release binaries
+!bin/Release/VoxelAI.exe
+!VoxelAI.exe
