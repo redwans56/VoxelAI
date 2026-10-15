@@ -45,10 +45,13 @@ namespace VoxelAI
 
 		private int frameErrors;
 
+		private bool autoScreenshots;
+
 		private const uint PM_NOREMOVE = 0u;
 
-		public GameWindow()
+		public GameWindow(bool autoScreenshots = false)
 		{
+			this.autoScreenshots = autoScreenshots;
 			Text = "Voxel AI - .NET Framework voxel world with self improving AI";
 			base.ClientSize = new Size(1280, 720);
 			base.StartPosition = FormStartPosition.CenterScreen;
@@ -90,6 +93,7 @@ namespace VoxelAI
 			GL.SetSwapInterval(1);
 			game = new VoxelAI.Game.Game(input);
 			game.Window = this;
+			game.AutoCaptureMode = autoScreenshots;
 			game.Camera.Width = base.ClientSize.Width;
 			game.Camera.Height = base.ClientSize.Height;
 			try

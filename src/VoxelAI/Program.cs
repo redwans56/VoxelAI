@@ -7,7 +7,7 @@ namespace VoxelAI
 	internal static class Program
 	{
 		[STAThread]
-		private static void Main()
+		private static void Main(string[] args)
 		{
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
@@ -23,7 +23,8 @@ namespace VoxelAI
 				{
 				}
 			};
-			Application.Run(new GameWindow());
+			bool autoScreenshots = args != null && args.Length > 0 && (args[0].Equals("--screenshots", StringComparison.OrdinalIgnoreCase) || args[0].Equals("-s", StringComparison.OrdinalIgnoreCase));
+			Application.Run(new GameWindow(autoScreenshots));
 		}
 	}
 }

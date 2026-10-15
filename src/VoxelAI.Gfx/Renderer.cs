@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using VoxelAI.AI;
 using VoxelAI.Core;
@@ -765,6 +768,48 @@ namespace VoxelAI.Gfx
 		{
 			Atlas.Update(dt);
 			Time2 += dt;
+		}
+
+		public void SaveScreenshot(int w, int h, string filePath)
+		{
+			try
+			{
+				string dir = Path.GetDirectoryName(filePath);
+				if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+				{
+					Directory.CreateDirectory(dir);
+				}
+				byte[] pixels = new byte[w * h * 4];
+				GL.ReadPixels(0, 0, w, h, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, pixels);
+				using (Bitmap bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb))
+				{
+					BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+					unsafe
+					{
+						byte* scan0 = (byte*)data.Scan0;
+						int stride = data.Stride;
+						for (int y = 0; y < h; y++)
+						{
+							int glY = h - 1 - y;
+							for (int x = 0; x < w; x++)
+							{
+								int glIdx = (glY * w + x) * 4;
+								int bmpIdx = y * stride + x * 4;
+								scan0[bmpIdx + 0] = pixels[glIdx + 2]; // B
+								scan0[bmpIdx + 1] = pixels[glIdx + 1]; // G
+								scan0[bmpIdx + 2] = pixels[glIdx + 0]; // R
+								scan0[bmpIdx + 3] = pixels[glIdx + 3]; // A
+							}
+						}
+					}
+					bmp.UnlockBits(data);
+					bmp.Save(filePath, ImageFormat.Png);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("SaveScreenshot failed: " + ex.Message);
+			}
 		}
 	}
 }

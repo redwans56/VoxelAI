@@ -18,7 +18,7 @@
   <b>A lightweight, zero-dependency 3D voxel sandbox game engine and autonomous artificial intelligence laboratory built from scratch in C#.</b>
 </p>
 
-[Quick Start](#-quick-start) • [Controls](#-controls--hotkeys) • [AI Architecture](#-how-the-ai-works-under-the-hood) • [The Bug Fix Saga](#-the-engineering-saga-how-we-fixed--optimized-it) • [Build Guide](#-building-from-source) • [Wikipedia Article](#voxel-ai-encyclopedic-overview)
+[Quick Start](#-quick-start) • [Screenshots](#-in-game-screenshots--feature-showcase) • [Controls](#-controls--hotkeys) • [AI Architecture](#-how-the-ai-works-under-the-hood) • [The Bug Fix Saga](#-the-engineering-saga-how-we-fixed--optimized-it) • [Build Guide](#-building-from-source) • [Wikipedia Article](#voxel-ai-encyclopedic-overview)
 
 </div>
 
@@ -125,6 +125,43 @@ And best of all? **It's completely dependency-free.** No 50GB engine install. No
 
 ---
 
+## 📸 In-Game Screenshots & Feature Showcase
+
+Here is a live look at *VoxelAI* captured directly from the running engine:
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="screenshots/02_voxel_world.png"><img src="screenshots/02_voxel_world.png" alt="Procedural Voxel World & Autonomous Agents" width="100%" /></a>
+      <br/>
+      <b>1. Procedural Voxel World & Autonomous Agent Colonies</b>
+      <p align="left"><i>Real-time procedural chunk streaming with greedy face culling. Multiple autonomous AI agents (ORB-12, MUX-16, TEL-19) roam the world, forage for resources, harvest grass and dirt, and erect wooden architectures in the distance.</i></p>
+    </td>
+    <td width="50%" align="center">
+      <a href="screenshots/03_ai_brain_hud.png"><img src="screenshots/03_ai_brain_hud.png" alt="Brain Inspector HUD" width="100%" /></a>
+      <br/>
+      <b>2. Real-Time Brain Inspector HUD (Press <code>O</code> or <code>B</code>)</b>
+      <p align="left"><i>Live telemetry overlay exposing individual agent genetics across 12 evolved traits (Aggression, Caution, Impatience, Grit, Architect), reinforcement skill progression, and Q-value action utility bars updating in real time.</i></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <a href="screenshots/04_ai_leaderboard.png"><img src="screenshots/04_ai_leaderboard.png" alt="AI Colony Leaderboard" width="100%" /></a>
+      <br/>
+      <b>3. Multi-Agent Colony Leaderboard (Press <code>Tab</code>)</b>
+      <p align="left"><i>Colony-wide competitive telemetry table tracking generations, current fitness scores, blocks mined, structures placed, live decision actions (MINE, IDLE, STUCK, FLEE), combat stats, and mining mastery skills.</i></p>
+    </td>
+    <td width="50%" align="center">
+      <a href="screenshots/01_main_menu.png"><img src="screenshots/01_main_menu.png" alt="Win32 Instant Launch Menu" width="100%" /></a>
+      <br/>
+      <b>4. Ultra-Fast Win32 Title Screen & World Manager</b>
+      <p align="left"><i>Zero-dependency startup initializing directly into hardware OpenGL in under 200ms with saved world persistence, seed generation, and minimal memory footprint.</i></p>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## 🎮 Controls & Hotkeys
 
 | Input Key | Primary Action | Description |
@@ -136,11 +173,15 @@ And best of all? **It's completely dependency-free.** No 50GB engine install. No
 | **`Left Click`** | **Break Block** | Mine the target block highlighted by crosshair |
 | **`Right Click`** | **Place Block** | Place selected block onto the highlighted surface |
 | **`Middle Click`** | **Pick Block** | Sample voxel material from target block into inventory |
-| **`O` (or `B`)** | **AI Radar Dashboard** | **Toggle live AI telemetry, genetic radar charts, and brain states** |
+| **`O` (or `B`)** | **AI Brain Inspector** | **Toggle live AI telemetry, genetic radar charts, and brain states** |
+| **`R`** | **Cycle Inspected Agent** | Cycle focus to the next living agent in the colony |
+| **`Tab`** | **AI Colony Leaderboard** | **Toggle real-time leaderboard showing fitness, generations, and skills** |
 | **`Enter`** | **Spawn Agent / Action** | Trigger primary world action and spawn new evolutionary agents |
-| **`Tab`** | **Cycle Camera Mode** | Toggle between First-Person and Third-Person orbital cameras |
+| **`F2`** | **Capture Screenshot** | **Capture high-resolution uncompressed PNG directly into `screenshots/`** |
 | **`1` – `9`** | **Hotbar Select** | Select active voxel material (Stone, Dirt, Wood, Leaves, Bricks) |
-| **`H`** | **HUD Toggle** | Toggle minimal HUD mode for cinematic screenshots |
+| **`H`** | **Help Overlay** | Toggle on-screen keyboard help guide |
+| **`F`** | **Fly Mode** | Toggle creative flight mode |
+| **`G`** | **Game Mode** | Toggle between Survival and Creative modes |
 | **`Escape`** | **Release Cursor / Pause** | Release mouse cursor and show system pause menu |
 
 ---

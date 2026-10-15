@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Windows.Forms;
 using VoxelAI.AI;
@@ -14,6 +15,10 @@ namespace VoxelAI.Game
 	public class Game
 	{
 		public Mode Current;
+
+		public bool AutoCaptureMode;
+
+		private int autoCaptureFrame;
 
 		public readonly Renderer Renderer = new Renderer();
 
@@ -240,6 +245,64 @@ namespace VoxelAI.Game
 				UpdatePaused();
 				break;
 			}
+			if (AutoCaptureMode)
+			{
+				HandleAutoCapture();
+			}
+		}
+
+		private void HandleAutoCapture()
+		{
+			autoCaptureFrame++;
+			string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "screenshots");
+			if (!Directory.Exists(dir))
+			{
+				Directory.CreateDirectory(dir);
+			}
+			if (Current == Mode.Menu)
+			{
+				if (autoCaptureFrame == 10)
+				{
+					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "01_main_menu.png"));
+					StartWorld("world1", 20260517);
+					autoCaptureFrame = 0;
+				}
+			}
+			else if (Current == Mode.Playing)
+			{
+				if (autoCaptureFrame == 45)
+				{
+					Player.Pitch = -0.25f;
+					Player.Yaw = 0.8f;
+					Camera.Pitch = Player.Pitch;
+					Camera.Yaw = Player.Yaw;
+					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "02_voxel_world.png"));
+					showBrain = true;
+					if (AI != null && AI.Agents.Count > 0)
+					{
+						inspected = AI.Agents[0];
+						inspected.IsSelected = true;
+					}
+				}
+				else if (autoCaptureFrame == 60)
+				{
+					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "03_ai_brain_hud.png"));
+					showBrain = false;
+					showLeaderboard = true;
+				}
+				else if (autoCaptureFrame == 75)
+				{
+					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "04_ai_leaderboard.png"));
+				}
+				else if (autoCaptureFrame >= 90)
+				{
+					Current = Mode.Exiting;
+					if (Window != null)
+					{
+						Window.Close();
+					}
+				}
+			}
 		}
 
 		private void UpdateMenu()
@@ -446,6 +509,13 @@ namespace VoxelAI.Game
 			{
 				showHelp = !showHelp;
 			}
+			if (Input.Pressed(Keys.F2))
+			{
+				string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "screenshots");
+				string fn = Path.Combine(dir, "screenshot_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
+				Renderer.SaveScreenshot(Camera.Width, Camera.Height, fn);
+				Toast("Screenshot saved to " + Path.GetFileName(fn));
+			}
 			if (Input.Pressed(Keys.Tab))
 			{
 				showLeaderboard = !showLeaderboard;
@@ -482,14 +552,7 @@ namespace VoxelAI.Game
 				AI.EvolveNow();
 				Toast("AI: forced evolution step");
 			}
-			if (Input.Pressed(Keys.O))
-			{
-				showBrain = !showBrain;
-				if (showBrain)
-				{
-					UpdateMenu();
-				}
-			}
+
 			if (Input.Pressed(Keys.M))
 			{
 				AI.MutationRate = M.Clamp(AI.MutationRate + 0.05f, 0f, 0.8f);
