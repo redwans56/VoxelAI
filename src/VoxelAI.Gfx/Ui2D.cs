@@ -584,6 +584,43 @@ namespace VoxelAI.Gfx
 			fontVerts++;
 		}
 
+		public void PixelPanel(float x, float y, float w, float h, float bgR, float bgG, float bgB, float bgA, float borderR = 0.25f, float borderG = 0.35f, float borderB = 0.45f, float borderA = 0.95f)
+		{
+			Rect(x + 2f, y + 2f, w, h, 0f, 0f, 0f, 0.45f);
+			Rect(x, y, w, h, borderR * 0.5f, borderG * 0.5f, borderB * 0.5f, borderA);
+			Rect(x + 1f, y + 1f, w - 2f, 1f, borderR * 1.4f, borderG * 1.4f, borderB * 1.4f, borderA);
+			Rect(x + 1f, y + 1f, 1f, h - 2f, borderR * 1.4f, borderG * 1.4f, borderB * 1.4f, borderA);
+			Rect(x + 1f, y + h - 2f, w - 2f, 1f, borderR * 0.3f, borderG * 0.3f, borderB * 0.3f, borderA);
+			Rect(x + w - 2f, y + 1f, 1f, h - 2f, borderR * 0.3f, borderG * 0.3f, borderB * 0.3f, borderA);
+			Rect(x + 2f, y + 2f, w - 4f, h - 4f, bgR, bgG, bgB, bgA);
+		}
+
+		public void PixelBar(float x, float y, float w, float h, float fraction, float r, float g, float b, float a = 1f)
+		{
+			fraction = Math.Max(0f, Math.Min(1f, fraction));
+			Rect(x, y, w, h, 0.08f, 0.1f, 0.14f, 0.85f);
+			Outline(x, y, w, h, 0.22f, 0.26f, 0.32f, 0.95f, 1f);
+			float fillW = Math.Max(0f, (w - 2f) * fraction);
+			if (fillW > 0f)
+			{
+				GradientQuad(x + 1f, y + 1f, fillW, h - 2f, r, g, b, r * 0.7f, g * 0.7f, b * 0.7f, a);
+				Rect(x + 1f, y + 1f, fillW, 1f, Math.Min(1f, r * 1.4f), Math.Min(1f, g * 1.4f), Math.Min(1f, b * 1.4f), a * 0.8f);
+			}
+			for (float tx = x + 16f; tx < x + w - 4f; tx += 16f)
+			{
+				Rect(tx, y + 1f, 1f, h - 2f, 0f, 0f, 0f, 0.35f);
+			}
+		}
+
+		public void PixelBadge(float x, float y, string text, float scale, float bgR, float bgG, float bgB, float textR, float textG, float textB)
+		{
+			float tw = TextWidth(text, scale);
+			float pw = tw + 10f;
+			float ph = 8f * scale + 4f;
+			PixelPanel(x, y, pw, ph, bgR, bgG, bgB, 0.85f, bgR * 1.4f, bgG * 1.4f, bgB * 1.4f, 1f);
+			TextShadow(x + 5f, y + 2f, text, scale, textR, textG, textB, 1f);
+		}
+
 		public void End()
 		{
 			GL.MatrixMode(5889u);
@@ -621,6 +658,7 @@ namespace VoxelAI.Gfx
 			}
 			GL.Disable(3553u);
 			GL.Disable(3042u);
+			GL.DepthMask(true);
 			GL.Enable(2929u);
 			GL.Enable(2884u);
 			GL.MatrixMode(5889u);

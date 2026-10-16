@@ -261,7 +261,7 @@ namespace VoxelAI.Game
 			}
 			if (Current == Mode.Menu)
 			{
-				if (autoCaptureFrame == 10)
+				if (autoCaptureFrame == 12)
 				{
 					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "01_main_menu.png"));
 					StartWorld("world1", 20260517);
@@ -270,12 +270,17 @@ namespace VoxelAI.Game
 			}
 			else if (Current == Mode.Playing)
 			{
-				if (autoCaptureFrame == 45)
+				if (autoCaptureFrame == 50)
 				{
-					Player.Pitch = -0.25f;
-					Player.Yaw = 0.8f;
+					Player.Pitch = -0.15f;
+					Player.Yaw = 1.15f;
 					Camera.Pitch = Player.Pitch;
 					Camera.Yaw = Player.Yaw;
+					if (World.Items.Count == 0)
+					{
+						World.SpawnDrop((int)Player.Position.X + 2, (int)Player.Position.Y, (int)Player.Position.Z + 2, 3, 4);
+						World.SpawnDrop((int)Player.Position.X - 2, (int)Player.Position.Y, (int)Player.Position.Z + 2, 7, 2);
+					}
 					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "02_voxel_world.png"));
 					showBrain = true;
 					if (AI != null && AI.Agents.Count > 0)
@@ -284,17 +289,17 @@ namespace VoxelAI.Game
 						inspected.IsSelected = true;
 					}
 				}
-				else if (autoCaptureFrame == 60)
+				else if (autoCaptureFrame == 75)
 				{
 					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "03_ai_brain_hud.png"));
 					showBrain = false;
 					showLeaderboard = true;
 				}
-				else if (autoCaptureFrame == 75)
+				else if (autoCaptureFrame == 100)
 				{
 					Renderer.SaveScreenshot(Camera.Width, Camera.Height, Path.Combine(dir, "04_ai_leaderboard.png"));
 				}
-				else if (autoCaptureFrame >= 90)
+				else if (autoCaptureFrame >= 125)
 				{
 					Current = Mode.Exiting;
 					if (Window != null)
@@ -341,17 +346,40 @@ namespace VoxelAI.Game
 			Ui2D ui = Renderer.Ui;
 			ui.Begin(Camera.Width, Camera.Height);
 			float cx = (float)Camera.Width * 0.5f;
-			ui.Rect(0f, 0f, Camera.Width, Camera.Height, 0.04f, 0.05f, 0.08f, 1f);
-			ui.TextCentered(cx, (float)Camera.Height * 0.18f, "VOXEL AI", 6f, 0.55f, 0.85f, 1f, 1f);
-			ui.TextCentered(cx, (float)Camera.Height * 0.18f + 60f, "A .NET FRAMEWORK VOXEL WORLD WITH SELF IMPROVING AI PLAYERS", 1.6f, 0.7f, 0.78f, 0.9f, 1f);
+
+			ui.Rect(0f, 0f, Camera.Width, Camera.Height, 0.03f, 0.04f, 0.06f, 1f);
+			ui.Outline(16f, 16f, Camera.Width - 32f, Camera.Height - 32f, 0.15f, 0.22f, 0.32f, 0.8f, 2f);
+
+			float titleW = 640f;
+			float titleH = 100f;
+			ui.PixelPanel(cx - titleW * 0.5f, 55f, titleW, titleH, 0.05f, 0.07f, 0.11f, 0.92f, 0.25f, 0.55f, 0.85f);
+			ui.TextCentered(cx, 72f, "VOXEL AI", 5.5f, 0.45f, 0.85f, 1f, 1f);
+			ui.TextCentered(cx, 126f, "AN AUTONOMOUS MULTI-AGENT EVOLUTIONARY VOXEL SANDBOX", 1.25f, 0.7f, 0.82f, 0.95f, 0.95f);
+
+			float btnW = 390f;
+			float btnH = 44f;
+			float startY = (float)Camera.Height * 0.40f;
 			for (int i = 0; i < menuItems.Length; i++)
 			{
-				bool flag = i == menuIndex;
-				ui.TextCentered(cx, (float)Camera.Height * 0.42f + (float)i * 34f, ((!flag) ? "  " : "> ") + menuItems[i], 2.4f, (!flag) ? 0.75f : 1f, (!flag) ? 0.78f : 0.95f, (!flag) ? 0.8f : 0.5f, 1f);
+				bool selected = (i == menuIndex);
+				float btnY = startY + (float)i * 54f;
+				if (selected)
+				{
+					ui.PixelPanel(cx - btnW * 0.5f - 4f, btnY - 2f, btnW + 8f, btnH + 4f, 0.12f, 0.16f, 0.24f, 0.95f, 1f, 0.85f, 0.3f);
+					ui.TextCentered(cx, btnY + 12f, ">  " + menuItems[i] + "  <", 1.8f, 1f, 0.92f, 0.45f, 1f);
+				}
+				else
+				{
+					ui.PixelPanel(cx - btnW * 0.5f, btnY, btnW, btnH, 0.05f, 0.07f, 0.1f, 0.85f, 0.2f, 0.26f, 0.35f);
+					ui.TextCentered(cx, btnY + 13f, menuItems[i], 1.7f, 0.75f, 0.82f, 0.9f, 0.9f);
+				}
 			}
+
 			string[] array = WorldSave.ListWorlds();
-			ui.TextCentered(cx, (float)Camera.Height * 0.72f, "SAVED WORLDS: " + ((array.Length != 0) ? string.Join(", ", array) : "NONE YET"), 1.5f, 0.6f, 0.7f, 0.8f, 1f);
-			ui.TextCentered(cx, (float)Camera.Height - 70f, "ENTER = SELECT      ARROWS = NAVIGATE", 1.5f, 0.55f, 0.62f, 0.7f, 1f);
+			string saveStr = "SAVED SEEDS: " + ((array.Length != 0) ? string.Join(", ", array) : "NONE YET");
+			ui.PixelBadge(cx - (ui.TextWidth(saveStr, 1.1f) + 20f) * 0.5f, (float)Camera.Height * 0.74f, saveStr, 1.1f, 0.06f, 0.1f, 0.15f, 0.55f, 0.75f, 0.95f);
+
+			ui.TextCentered(cx, (float)Camera.Height - 55f, "ENTER / SPACE : SELECT      UP / DOWN : NAVIGATE", 1.2f, 0.6f, 0.7f, 0.8f, 0.95f);
 			ui.End();
 		}
 
@@ -359,16 +387,15 @@ namespace VoxelAI.Game
 		{
 			Ui2D ui = Renderer.Ui;
 			ui.Begin(Camera.Width, Camera.Height);
-			ui.Rect(0f, 0f, Camera.Width, Camera.Height, 0.03f, 0.04f, 0.06f, 1f);
 			float num = (float)Camera.Width * 0.5f;
 			float num2 = (float)Camera.Height * 0.5f;
-			ui.TextCentered(num, num2 - 60f, "VOXEL AI", 5f, 0.5f, 0.8f, 1f, 1f);
-			ui.TextCentered(num, num2, LoadingText, 2f, 0.85f, 0.9f, 1f, 1f);
+			ui.Rect(0f, 0f, Camera.Width, Camera.Height, 0.03f, 0.04f, 0.06f, 1f);
+			ui.TextCentered(num, num2 - 70f, "VOXEL AI", 5f, 0.45f, 0.85f, 1f, 1f);
+			ui.TextCentered(num, num2 - 10f, LoadingText, 1.6f, 0.85f, 0.92f, 1f, 1f);
 			float num3 = ((LoadingTotal <= 0) ? 0f : M.Clamp((float)LoadingDone / (float)Math.Max(1, LoadingTotal), 0f, 1f));
-			ui.Rect(num - 220f, num2 + 30f, 440f, 18f, 0.12f, 0.14f, 0.18f, 1f);
-			ui.Rect(num - 218f, num2 + 32f, 436f * num3, 14f, 0.35f, 0.75f, 1f, 1f);
-			ui.TextCentered(num, num2 + 60f, "CHUNKS LIT " + LoadingDone + " / " + LoadingTotal, 1.5f, 0.7f, 0.8f, 0.9f, 1f);
-			ui.TextCentered(num, (float)Camera.Height - 80f, Renderer.GLInfo, 1.2f, 0.5f, 0.55f, 0.65f, 1f);
+			ui.PixelBar(num - 220f, num2 + 20f, 440f, 20f, num3, 0.3f, 0.75f, 1f, 1f);
+			ui.TextCentered(num, num2 + 55f, "CHUNKS COMPILED & LIT: " + LoadingDone + " / " + LoadingTotal, 1.25f, 0.7f, 0.8f, 0.9f, 1f);
+			ui.TextCentered(num, (float)Camera.Height - 60f, Renderer.GLInfo, 1.1f, 0.45f, 0.55f, 0.65f, 0.9f);
 			ui.End();
 			if (LoadingDone >= 12 && LoadingTotal >= 20)
 			{
@@ -642,12 +669,12 @@ namespace VoxelAI.Game
 			Renderer.DrawChunks(World, Camera, chunks, false);
 			Renderer.DrawCreatures(World, Camera, AI);
 			Renderer.DrawItems(World, Camera);
-			Renderer.DrawClouds(World, Camera, 0.016f);
-			Renderer.DrawHeldItem(Player.SelectedBlock, Player.Swing, true, Camera);
 			Renderer.DrawHighlight(Player.TargetBlock, Player.HasTarget && !showBrain);
 			Renderer.DrawChunks(World, Camera, chunks, true);
+			Renderer.DrawClouds(World, Camera, 0.016f);
 			Renderer.DrawParticles(World, Camera);
 			Renderer.DrawWeather(World, Camera, 0.016f);
+			Renderer.DrawHeldItem(Player.SelectedBlock, Player.Swing, true, Camera);
 			DrawHud();
 		}
 
@@ -655,112 +682,168 @@ namespace VoxelAI.Game
 		{
 			Ui2D ui = Renderer.Ui;
 			ui.Begin(Camera.Width, Camera.Height);
-			float num = ((Camera.Width < 1600) ? 1.4f : 1.7f);
-			float num2 = (float)Camera.Width * 0.5f;
-			float num3 = (float)Camera.Height * 0.5f;
-			ui.Rect(num2 - 9f, num3 - 1f, 18f, 2f, 1f, 1f, 1f, 0.8f);
-			ui.Rect(num2 - 1f, num3 - 9f, 2f, 18f, 1f, 1f, 1f, 0.8f);
-			int num4 = M.FloorInt(Player.Position.X);
-			int num5 = M.FloorInt(Player.Position.Y);
-			int num6 = M.FloorInt(Player.Position.Z);
-			string[] array = new string[5]
-			{
-				string.Format(CultureInfo.InvariantCulture, "VOXEL AI  {0:0} FPS   {1:0.0} MS", Fps, FrameMs),
-				string.Format(CultureInfo.InvariantCulture, "XYZ {0} {1} {2}   CHUNK {3},{4}", num4, num5, num6, M.FloorDiv(num4, 16), M.FloorDiv(num6, 16)),
-				string.Format(CultureInfo.InvariantCulture, "{0}   {1}   LIGHT {2}   DAYLIGHT {3:0.00}", World.CurrentWeather, World.BiomeAt(num4, num6), World.LightAt(num4, num5, num6), World.Daylight),
-				string.Format(CultureInfo.InvariantCulture, "TIME {0:0.00}   CHUNKS {1}  DRAWN {2}  VERTS {3}", World.TimeOfDay, World.LoadedChunkCount, Renderer.DrawnChunks, Renderer.DrawnVertices),
-				string.Format(CultureInfo.InvariantCulture, "MODE {0}   {1}", Player.Flying ? "FLY" : ((!Player.Creative) ? "SURVIVAL" : "CREATIVE"), Renderer.GLInfo)
-			};
-			for (int i = 0; i < array.Length; i++)
-			{
-				ui.TextShadow(12f, 10f + (float)i * (8f * num + 2f), array[i], num, 0.92f, 0.95f, 1f, 0.95f);
-			}
+			float s = ((Camera.Width < 1600) ? 1.35f : 1.6f);
+			float cx = (float)Camera.Width * 0.5f;
+			float cy = (float)Camera.Height * 0.5f;
+
+			// --- Pixel Crosshair ---
+			ui.Rect(cx - 10f, cy - 2f, 20f, 4f, 0f, 0f, 0f, 0.65f);
+			ui.Rect(cx - 2f, cy - 10f, 4f, 20f, 0f, 0f, 0f, 0.65f);
+			ui.Rect(cx - 9f, cy - 1f, 6f, 2f, 1f, 1f, 1f, 0.95f);
+			ui.Rect(cx + 3f, cy - 1f, 6f, 2f, 1f, 1f, 1f, 0.95f);
+			ui.Rect(cx - 1f, cy - 9f, 2f, 6f, 1f, 1f, 1f, 0.95f);
+			ui.Rect(cx - 1f, cy + 3f, 2f, 6f, 1f, 1f, 1f, 0.95f);
+			ui.Rect(cx - 1f, cy - 1f, 2f, 2f, 0.3f, 1f, 0.5f, 0.9f);
+
+			int px = M.FloorInt(Player.Position.X);
+			int py = M.FloorInt(Player.Position.Y);
+			int pz = M.FloorInt(Player.Position.Z);
+
+			// --- Top-Left System & Telemetry Card ---
+			float cardW = 390f;
+			float cardH = 82f;
+			ui.PixelPanel(12f, 12f, cardW, cardH, 0.04f, 0.06f, 0.09f, 0.85f, 0.22f, 0.32f, 0.44f);
+			ui.PixelBadge(16f, 16f, string.Format(CultureInfo.InvariantCulture, "VOXEL AI v1.2  {0:0} FPS ({1:0.0}ms)", Fps, FrameMs), s * 0.82f, 0.12f, 0.22f, 0.32f, 0.4f, 0.9f, 1f);
+
+			string tLine1 = string.Format(CultureInfo.InvariantCulture, "POS {0}, {1}, {2}  [CHUNK {3},{4}]", px, py, pz, M.FloorDiv(px, 16), M.FloorDiv(pz, 16));
+			string tLine2 = string.Format(CultureInfo.InvariantCulture, "{0} | {1} | LIGHT {2} (SUN {3:0.00})", World.BiomeAt(px, pz).ToString().ToUpperInvariant(), World.CurrentWeather.ToString().ToUpperInvariant(), World.LightAt(px, py, pz), World.Daylight);
+			string tLine3 = string.Format(CultureInfo.InvariantCulture, "MODE {0} | TIME {1:0.00} | CHUNKS {2}/{3}", Player.Flying ? "FLY" : (Player.Creative ? "CREATIVE" : "SURVIVAL"), World.TimeOfDay, Renderer.DrawnChunks, World.LoadedChunkCount);
+
+			ui.TextShadow(18f, 38f, tLine1, s * 0.8f, 0.85f, 0.92f, 1f, 0.95f);
+			ui.TextShadow(18f, 52f, tLine2, s * 0.78f, 0.72f, 0.82f, 0.92f, 0.9f);
+			ui.TextShadow(18f, 66f, tLine3, s * 0.75f, 0.58f, 0.7f, 0.8f, 0.85f);
+
+			// --- Top-Right AI Colony Monitor Card ---
 			if (AI != null)
 			{
-				string[] array2 = new string[4]
-				{
-					AI.StatusLine(),
-					AI.Species.Summary(),
-					AI.VisitedCells + " CELLS EXPLORED BY THE COLONY",
-					"TAB LEADERBOARD   B BRAIN   N EVOLVE   O EVOLUTION ON/OFF"
-				};
-				for (int j = 0; j < array2.Length; j++)
-				{
-					float num7 = ui.TextWidth(array2[j], num);
-					ui.TextShadow((float)Camera.Width - num7 - 12f, 10f + (float)j * (8f * num + 2f), array2[j], num, (j != 0) ? 0.75f : 0.6f, 1f, (j != 0) ? 0.85f : 0.7f, 0.95f);
-				}
+				float colW = 430f;
+				float colH = 82f;
+				float colX = (float)Camera.Width - colW - 12f;
+				ui.PixelPanel(colX, 12f, colW, colH, 0.04f, 0.06f, 0.09f, 0.85f, 0.18f, 0.38f, 0.32f);
+				ui.PixelBadge(colX + 6f, 16f, "COLONY NEURAL LINK ACTIVE", s * 0.82f, 0.08f, 0.25f, 0.18f, 0.4f, 1f, 0.6f);
+
+				string aLine1 = AI.StatusLine();
+				string aLine2 = string.Format(CultureInfo.InvariantCulture, "{0} | {1} CELLS EXPLORED", AI.Species.Summary(), AI.VisitedCells);
+				string aLine3 = "[TAB] LEADERBOARD   [B] NEURAL CORTEX   [O] EVOLVE";
+
+				ui.TextShadow(colX + 8f, 38f, aLine1, s * 0.8f, 0.88f, 0.95f, 0.88f, 0.95f);
+				ui.TextShadow(colX + 8f, 52f, aLine2, s * 0.78f, 0.75f, 0.88f, 0.82f, 0.9f);
+				ui.TextShadow(colX + 8f, 66f, aLine3, s * 0.75f, 1f, 0.85f, 0.4f, 0.95f);
 			}
-			float num8 = Camera.Height - 62;
-			ui.Rect(12f, num8, 220f, 20f, 0.1f, 0.1f, 0.12f, 0.8f);
-			float num9 = M.Clamp(Player.Health / 100f, 0f, 1f);
-			ui.Rect(14f, num8 + 2f, 216f * num9, 16f, 0.8f * (1f - num9) + 0.2f, 0.25f + 0.6f * num9, 0.25f, 0.95f);
-			ui.TextShadow(16f, num8 + 4f, "HEALTH " + (int)Player.Health, num * 0.9f, 1f, 1f, 1f, 0.95f);
-			int num10 = 9;
-			float num11 = 46f;
-			float num12 = 6f;
-			float num13 = (float)num10 * num11 + (float)(num10 - 1) * num12;
-			float num14 = ((float)Camera.Width - num13) * 0.5f;
-			float num15 = Camera.Height - 70;
-			for (int k = 0; k < num10; k++)
+
+			// --- Bottom-Left Health & Status Card ---
+			float hpY = Camera.Height - 64;
+			float hpW = 210f;
+			ui.PixelPanel(12f, hpY, hpW, 48f, 0.04f, 0.06f, 0.09f, 0.85f, 0.35f, 0.18f, 0.22f);
+			float hpFrac = M.Clamp(Player.Health / 100f, 0f, 1f);
+			string hpStr = string.Format(CultureInfo.InvariantCulture, "VITALS  {0}/100 HP", (int)Player.Health);
+			ui.TextShadow(18f, hpY + 6f, hpStr, s * 0.82f, 1f, 0.88f, 0.88f, 0.95f);
+			float barR = M.Lerp(1f, 0.2f, hpFrac);
+			float barG = M.Lerp(0.2f, 0.92f, hpFrac);
+			float barB = 0.25f;
+			ui.PixelBar(18f, hpY + 22f, hpW - 12f, 16f, hpFrac, barR, barG, barB, 0.95f);
+
+			// --- Bottom-Center Retro Hotbar ---
+			int slots = 9;
+			float slotSize = 48f;
+			float slotGap = 6f;
+			float totalBarW = (float)slots * slotSize + (float)(slots - 1) * slotGap;
+			float barLeft = ((float)Camera.Width - totalBarW) * 0.5f;
+			float barY = Camera.Height - 68;
+
+			ui.PixelPanel(barLeft - 8f, barY - 6f, totalBarW + 16f, slotSize + 12f, 0.03f, 0.04f, 0.06f, 0.88f, 0.2f, 0.24f, 0.3f);
+
+			for (int k = 0; k < slots; k++)
 			{
-				float num16 = num14 + (float)k * (num11 + num12);
-				bool flag = k == Player.HotbarIndex;
-				ui.Rect(num16, num15, num11, num11, 0.06f, 0.07f, 0.09f, 0.75f);
-				if (flag)
+				float sx = barLeft + (float)k * (slotSize + slotGap);
+				bool selected = (k == Player.HotbarIndex);
+
+				if (selected)
 				{
-					ui.Outline(num16 - 1f, num15 - 1f, num11 + 2f, num11 + 2f, 1f, 0.95f, 0.4f, 1f, 2f);
+					ui.PixelPanel(sx - 2f, barY - 2f, slotSize + 4f, slotSize + 4f, 0.15f, 0.14f, 0.08f, 0.95f, 1f, 0.88f, 0.25f);
 				}
+				else
+				{
+					ui.PixelPanel(sx, barY, slotSize, slotSize, 0.07f, 0.08f, 0.11f, 0.85f, 0.18f, 0.22f, 0.28f);
+				}
+
 				byte b = Player.Hotbar[k];
 				if (b != 0)
 				{
-					float num17 = 34f;
+					float iconSize = 34f;
+					float iconX = sx + (slotSize - iconSize) * 0.5f;
+					float iconY = barY + (slotSize - iconSize) * 0.5f;
 					GL.BindTexture(3553u, Renderer.Atlas.TextureId);
-					ui.TileRect(num16 + (num11 - num17) * 0.5f, num15 + (num11 - num17) * 0.5f, num17, num17, Blocks.Info((B)b).TileSide, 1f, 1f, 1f, 1f);
+					ui.TileRect(iconX, iconY, iconSize, iconSize, Blocks.Info((B)b).TileSide, 1f, 1f, 1f, 1f);
+					if (!Player.Creative)
+					{
+						int count = Player.CountOf(b);
+						if (count > 1)
+						{
+							string cStr = count.ToString(CultureInfo.InvariantCulture);
+							ui.TextShadow(sx + slotSize - ui.TextWidth(cStr, s * 0.75f) - 4f, barY + slotSize - 12f, cStr, s * 0.75f, 1f, 1f, 0.9f, 1f);
+						}
+					}
 				}
-				ui.TextShadow(num16 + 3f, num15 + 2f, (k + 1).ToString(CultureInfo.InvariantCulture), num * 0.8f, 0.9f, 0.9f, 1f, 0.9f);
+				ui.TextShadow(sx + 4f, barY + 3f, (k + 1).ToString(CultureInfo.InvariantCulture), s * 0.75f, 0.65f, 0.75f, 0.85f, 0.85f);
 			}
-			byte selectedBlock = Player.SelectedBlock;
-			if (selectedBlock != 0)
+
+			byte sel = Player.SelectedBlock;
+			if (sel != 0)
 			{
-				string s = Blocks.Name((B)selectedBlock).ToUpperInvariant() + ((!Player.Creative) ? ("  x" + Player.CountOf(selectedBlock)) : "  (INFINITE)");
-				ui.TextCentered((float)Camera.Width * 0.5f, num15 - 24f, s, num, 1f, 1f, 1f, 0.95f);
+				string itemName = Blocks.Name((B)sel).ToUpperInvariant() + (Player.Creative ? "  [CREATIVE]" : string.Format(CultureInfo.InvariantCulture, "  [{0}]", Player.CountOf(sel)));
+				float itemBadgeW = ui.TextWidth(itemName, s * 0.9f) + 20f;
+				float itemBadgeX = cx - itemBadgeW * 0.5f;
+				float itemBadgeY = barY - 34f;
+				ui.PixelBadge(itemBadgeX, itemBadgeY, itemName, s * 0.85f, 0.08f, 0.12f, 0.18f, 1f, 0.95f, 0.7f);
 			}
+
 			if (Player.MineProgress > 0f && Player.HasTarget)
 			{
-				float num18 = M.Clamp(Player.MineProgress / Math.Max(0.001f, Blocks.Info((B)World.GetBlock(Player.TargetBlock.X, Player.TargetBlock.Y, Player.TargetBlock.Z)).Hardness), 0f, 1f);
-				ui.Rect(num2 - 40f, num3 + 26f, 80f, 8f, 0.1f, 0.1f, 0.1f, 0.75f);
-				ui.Rect(num2 - 39f, num3 + 27f, 78f * num18, 6f, 0.95f, 0.85f, 0.4f, 1f);
+				float hardness = Math.Max(0.001f, Blocks.Info((B)World.GetBlock(Player.TargetBlock.X, Player.TargetBlock.Y, Player.TargetBlock.Z)).Hardness);
+				float mineFrac = M.Clamp(Player.MineProgress / hardness, 0f, 1f);
+				ui.PixelBar(cx - 50f, cy + 28f, 100f, 10f, mineFrac, 1f, 0.85f, 0.2f, 0.95f);
 			}
-			DrawAgentLabels(ui, num);
+
+			DrawAgentLabels(ui, s);
+
 			if (showChronicle && AI != null && AI.Chronicle.Count > 0)
 			{
-				int num19 = Math.Min(5, AI.Chronicle.Count);
-				for (int l = 0; l < num19; l++)
+				int numLines = Math.Min(5, AI.Chronicle.Count);
+				float chrW = 520f;
+				float chrH = 20f + (float)numLines * 14f;
+				float chrY = (float)(Camera.Height - 120) - chrH;
+				ui.PixelPanel(12f, chrY, chrW, chrH, 0.04f, 0.05f, 0.08f, 0.8f, 0.35f, 0.28f, 0.15f);
+				ui.TextShadow(18f, chrY + 4f, "COLONY CHRONICLE", s * 0.75f, 1f, 0.85f, 0.45f, 0.95f);
+				for (int l = 0; l < numLines; l++)
 				{
-					string text = AI.Chronicle[AI.Chronicle.Count - num19 + l];
-					if (text.Length > 92)
+					string text = AI.Chronicle[AI.Chronicle.Count - numLines + l];
+					if (text.Length > 75)
 					{
-						text = text.Substring(0, 92) + "...";
+						text = text.Substring(0, 75) + "...";
 					}
-					ui.TextShadow(12f, (float)(Camera.Height - 120) - (float)(num19 - l) * (8f * num), text, num * 0.85f, 0.85f, 0.95f, 1f, 0.9f);
+					ui.TextShadow(18f, chrY + 18f + (float)l * 13f, text, s * 0.72f, 0.85f, 0.92f, 0.98f, 0.9f);
 				}
-				ui.TextShadow(12f, Camera.Height - 120, "AI CHRONICLE", num * 0.85f, 1f, 0.8f, 0.4f, 0.95f);
 			}
-			if (toastTimer > 0f)
+
+			if (toastTimer > 0f && !showLeaderboard && !showBrain)
 			{
-				ui.TextCentered((float)Camera.Width * 0.5f, 90f, toast, num * 1.1f, 1f, 0.95f, 0.6f, M.Clamp(toastTimer, 0f, 1f));
+				float toastW = ui.TextWidth(toast, s * 1.1f) + 24f;
+				ui.PixelPanel(cx - toastW * 0.5f, 100f, toastW, 28f, 0.06f, 0.08f, 0.12f, M.Clamp(toastTimer, 0f, 0.92f), 1f, 0.85f, 0.3f, M.Clamp(toastTimer, 0f, 1f));
+				ui.TextCentered(cx, 106f, toast, s * 1.05f, 1f, 0.95f, 0.6f, M.Clamp(toastTimer, 0f, 1f));
 			}
+
 			if (showLeaderboard)
 			{
-				DrawLeaderboard(ui, num);
+				DrawLeaderboard(ui, s);
 			}
 			if (showBrain)
 			{
-				DrawBrainPanel(ui, num);
+				DrawBrainPanel(ui, s);
 			}
 			if (showHelp)
 			{
-				DrawHelp(ui, num);
+				DrawHelp(ui, s);
 			}
 			ui.End();
 		}
@@ -779,60 +862,87 @@ namespace VoxelAI.Game
 					continue;
 				}
 				Vec3 world = agent.Body.Position.Add(0f, 1.9f, 0f);
+				float dist = Vec3.Distance(agent.Body.Position, Camera.Pos);
+				if (dist > 36f)
+				{
+					continue;
+				}
+				if (!World.HasLineOfSight(Camera.Pos, world))
+				{
+					continue;
+				}
 				float sx;
 				float sy;
 				float depth;
 				if (Camera.WorldToScreen(world, out sx, out sy, out depth) && !(sx < -100f) && !(sy < -40f) && !(sx > (float)(Camera.Width + 100)) && !(sy > (float)(Camera.Height + 40)))
 				{
-					float num = Vec3.Distance(agent.Body.Position, Camera.Pos);
-					if (!(num > 64f))
-					{
-						string s2 = agent.Name + " g" + agent.Generation;
-						string s3 = string.Concat(agent.Action, ": ", agent.Status);
-						float num2 = M.Clamp(1.6f - num * 0.012f, 0.8f, 1.5f);
-						float num3 = Math.Max(ui.TextWidth(s2, num2), ui.TextWidth(s3, num2 * 0.85f));
-						float num4 = sx - num3 * 0.5f;
-						float num5 = sy;
-						ui.Rect(num4 - 4f, num5 - 2f, num3 + 8f, 22f * num2 + 4f, 0f, 0f, 0f, (!agent.IsSelected) ? 0.32f : 0.6f);
-						ui.Text(num4, num5, s2, num2, agent.Body.HeadR, agent.Body.HeadG, agent.Body.HeadB, 1f);
-						ui.Text(num4, num5 + 9f * num2, s3, num2 * 0.85f, 0.85f, 0.9f, 1f, 0.95f);
-						float num6 = num3 + 8f;
-						ui.Rect(num4 - 4f, num5 + 20f * num2 + 4f, num6, 4f, 0.2f, 0.05f, 0.05f, 0.8f);
-						ui.Rect(num4 - 4f, num5 + 20f * num2 + 4f, num6 * agent.HealthFrac, 4f, 0.3f, 0.9f, 0.3f, 0.9f);
-						float num7 = M.Clamp(agent.Fitness / Math.Max(50f, AI.BestFitnessEver), 0f, 1f);
-						ui.Rect(num4 - 4f, num5 + 26f * num2 + 4f, num6, 4f, 0.1f, 0.15f, 0.25f, 0.8f);
-						ui.Rect(num4 - 4f, num5 + 26f * num2 + 4f, num6 * num7, 4f, 0.5f, 0.7f, 1f, 0.9f);
-					}
+					string s2 = agent.Name + " [G" + agent.Generation + "]";
+					string s3 = string.Concat(agent.Action, ": ", agent.Status);
+					float scale = M.Clamp(1.5f - dist * 0.025f, 0.85f, 1.4f);
+					float tw = Math.Max(ui.TextWidth(s2, scale), ui.TextWidth(s3, scale * 0.8f));
+					float panelW = tw + 16f;
+					float panelH = 34f * scale;
+					float px = sx - panelW * 0.5f;
+					float py = sy - panelH - 4f;
+
+					ui.PixelPanel(px, py, panelW, panelH, 0.06f, 0.08f, 0.12f, 0.82f, agent.IsSelected ? 1f : 0.4f, agent.IsSelected ? 0.9f : 0.6f, agent.IsSelected ? 0.2f : 0.8f);
+					ui.Text(px + 8f, py + 4f, s2, scale, agent.Body.HeadR, agent.Body.HeadG, agent.Body.HeadB, 1f);
+					ui.Text(px + 8f, py + 14f * scale, s3, scale * 0.8f, 0.85f, 0.92f, 1f, 0.95f);
+
+					float barY = py + panelH - 8f;
+					ui.PixelBar(px + 6f, barY, panelW - 12f, 4f, agent.HealthFrac, 0.85f, 0.2f, 0.2f, 0.9f);
 				}
 			}
 		}
 
 		private void DrawLeaderboard(Ui2D ui, float s)
 		{
-			if (AI != null)
+			if (AI == null)
 			{
-				float num = Math.Min(900, Camera.Width - 80);
-				float num2 = 90f + (float)AI.Agents.Count * (10f * s + 4f);
-				float num3 = ((float)Camera.Width - num) * 0.5f;
-				float num4 = 120f;
-				ui.Rect(num3, num4, num, num2, 0f, 0f, 0f, 0.72f);
-				ui.Outline(num3, num4, num, num2, 0.4f, 0.7f, 1f, 0.8f, 2f);
-				ui.Text(num3 + 14f, num4 + 8f, "AI LEADERBOARD  (TAB TO CLOSE)", s * 1.2f, 0.7f, 0.9f, 1f, 1f);
-				string s2 = string.Format("{0,-10} {1,-4} {2,8} {3,7} {4,7} {5,13} {6,6} {7,6} {8,5} {9,5}", "NAME", "GEN", "FITNESS", "MINED", "PLACED", "ACTION", "KILLS", "DEATHS", "ORE", "SKILL");
-				ui.Text(num3 + 14f, num4 + 30f, s2, s * 0.9f, 0.85f, 0.9f, 1f, 0.95f);
-				List<Agent> list = AI.Leaderboard();
-				for (int i = 0; i < list.Count; i++)
-				{
-					Agent agent = list[i];
-					string text = ((!agent.Dead) ? agent.Action.ToString() : "respawning");
-					string s3 = string.Format(CultureInfo.InvariantCulture, "{0,-10} {1,-4} {2,8:0} {3,7} {4,7} {5,13} {6,6} {7,6} {8,5} {9,5:0.00}", agent.Name, agent.Generation, agent.Fitness, agent.MinedTotal, agent.PlacementsTotal, text, agent.Kills, agent.Deaths, agent.OresFound, agent.Brain.SkillMining);
-					float headR = agent.Body.HeadR;
-					float headG = agent.Body.HeadG;
-					float headB = agent.Body.HeadB;
-					ui.Text(num3 + 14f, num4 + 46f + (float)i * (10f * s + 4f), s3, s * 0.9f, headR, headG, headB, (!agent.Dead) ? 1f : 0.5f);
-				}
-				ui.Text(num3 + 14f, num4 + num2 - 22f, "FITNESS = MINING + BUILDING + CRAFTING + KILLS + SURVIVAL - DAMAGE", s * 0.8f, 0.7f, 0.78f, 0.9f, 0.95f);
+				return;
 			}
+			float w = Math.Min(920f, Camera.Width - 60);
+			int count = Math.Min(AI.Agents.Count, 16);
+			float rowH = 18f;
+			float h = 110f + (float)count * rowH;
+			float lx = ((float)Camera.Width - w) * 0.5f;
+			float ly = 100f;
+
+			ui.PixelPanel(lx, ly, w, h, 0.04f, 0.06f, 0.1f, 0.92f, 0.3f, 0.5f, 0.7f);
+			ui.PixelBadge(lx + 14f, ly + 10f, "AI SPECIES LEADERBOARD  [TAB TO DISMISS]", s * 1.05f, 0.1f, 0.2f, 0.35f, 0.4f, 0.85f, 1f);
+
+			string header = string.Format("{0,-4} {1,-10} {2,-4} {3,8} {4,7} {5,7} {6,13} {7,6} {8,6} {9,5} {10,6}",
+				"#", "NAME", "GEN", "FITNESS", "MINED", "PLACED", "ACTION", "KILLS", "DEATHS", "ORE", "SKILL");
+			ui.Text(lx + 16f, ly + 36f, header, s * 0.82f, 0.7f, 0.82f, 0.95f, 0.95f);
+			ui.Rect(lx + 12f, ly + 50f, w - 24f, 1f, 0.25f, 0.35f, 0.45f, 0.8f);
+
+			List<Agent> list = AI.Leaderboard();
+			for (int i = 0; i < count; i++)
+			{
+				Agent agent = list[i];
+				string rankStr = (i == 0) ? " 1st" : ((i == 1) ? " 2nd" : ((i == 2) ? " 3rd" : string.Format("{0,3}.", i + 1)));
+				string actStr = (!agent.Dead) ? agent.Action.ToString() : "RESPAWN";
+				string row = string.Format(CultureInfo.InvariantCulture, "{0,-4} {1,-10} {2,-4} {3,8:0} {4,7} {5,7} {6,13} {7,6} {8,6} {9,5} {10,6:0.00}",
+					rankStr, agent.Name, agent.Generation, agent.Fitness, agent.MinedTotal, agent.PlacementsTotal, actStr, agent.Kills, agent.Deaths, agent.OresFound, agent.Brain.SkillMining);
+
+				float rowY = ly + 56f + (float)i * rowH;
+				if (i == 0)
+				{
+					ui.Rect(lx + 12f, rowY - 2f, w - 24f, rowH - 2f, 0.3f, 0.25f, 0.05f, 0.35f);
+				}
+				else if (i % 2 == 1)
+				{
+					ui.Rect(lx + 12f, rowY - 2f, w - 24f, rowH - 2f, 0.1f, 0.12f, 0.18f, 0.25f);
+				}
+
+				float r = (i == 0) ? 1f : ((i == 1) ? 0.85f : ((i == 2) ? 0.95f : agent.Body.HeadR));
+				float g = (i == 0) ? 0.85f : ((i == 1) ? 0.88f : ((i == 2) ? 0.65f : agent.Body.HeadG));
+				float b = (i == 0) ? 0.2f : ((i == 1) ? 0.92f : ((i == 2) ? 0.35f : agent.Body.HeadB));
+
+				ui.Text(lx + 16f, rowY, row, s * 0.82f, r, g, b, (!agent.Dead) ? 1f : 0.5f);
+			}
+
+			ui.Text(lx + 16f, ly + h - 22f, "FITNESS FORMULA: MINING + BUILDING + CRAFTING + KILLS*20 + SURVIVAL*0.5 - DEATHS*15", s * 0.75f, 0.55f, 0.7f, 0.8f, 0.95f);
 		}
 
 		private void DrawBrainPanel(Ui2D ui, float s)
@@ -849,56 +959,50 @@ namespace VoxelAI.Game
 					inspected.IsSelected = true;
 				}
 			}
-			float w = 470f;
-			float num = 14f;
-			float num2 = 120f;
+			float w = 480f;
+			float bx = 16f;
+			float by = 100f;
 			if (inspected == null)
 			{
-				ui.Rect(num, num2, w, 60f, 0f, 0f, 0f, 0.7f);
-				ui.Text(num + 12f, num2 + 10f, "NO AGENT TO INSPECT (PRESS R)", s, 1f, 0.8f, 0.5f, 1f);
+				ui.PixelPanel(bx, by, w, 60f, 0.06f, 0.08f, 0.12f, 0.85f, 0.8f, 0.5f, 0.2f);
+				ui.Text(bx + 14f, by + 18f, "NO AGENT IN RANGE TO INSPECT (PRESS R)", s, 1f, 0.8f, 0.5f, 1f);
 				return;
 			}
-			Agent agent = inspected;
-			float h = 560f;
-			ui.Rect(num, num2, w, h, 0f, 0f, 0f, 0.74f);
-			ui.Outline(num, num2, w, h, 0.4f, 0.9f, 0.5f, 0.9f, 2f);
-			Agent agent2 = agent;
-			float num3 = num2 + 8f;
-			ui.Text(num + 12f, num3, "BRAIN INSPECTOR  " + agent2.Name + "  GEN " + agent2.Generation + "  (B/R)", s * 1.1f, 0.6f, 1f, 0.7f, 1f);
-			num3 += 20f;
-			ui.Text(num + 12f, num3, agent2.G.Describe(), s, 0.9f, 1f, 0.9f, 1f);
-			num3 += 18f;
-			ui.Text(num + 12f, num3, string.Format(CultureInfo.InvariantCulture, "FIT {0:0}   HP {1:0}   AGE {2:0}S   DEATHS {3}   CARRY {4}/{5}", agent2.Fitness, agent2.Health, agent2.Age, agent2.Deaths, agent2.CarryCount, agent2.CarryLimit), s * 0.9f, 0.85f, 0.9f, 1f, 1f);
-			num3 += 18f;
-			ui.Text(num + 12f, num3, string.Concat("DOING: ", agent2.Action, " - ", agent2.Status), s * 0.9f, 1f, 0.9f, 0.6f, 1f);
-			num3 += 18f;
-			ui.Text(num + 12f, num3, "TOTALS: MINED " + agent2.MinedTotal + "  PLACED " + agent2.PlacementsTotal + "  CRAFTED " + agent2.CraftsTotal + "  HUTS " + agent2.StructuresBuilt + "  ORE " + agent2.OresFound, s * 0.85f, 0.8f, 0.9f, 1f, 1f);
-			num3 += 22f;
-			ui.Text(num + 12f, num3, "GENES (EVOLVED)", s, 0.9f, 0.8f, 1f, 1f);
-			num3 += 18f;
+
+			Agent agent2 = inspected;
+			float h = 580f;
+			ui.PixelPanel(bx, by, w, h, 0.04f, 0.06f, 0.1f, 0.92f, 0.25f, 0.85f, 0.5f);
+
+			float py = by + 10f;
+			ui.PixelBadge(bx + 12f, py, "NEURAL CORTEX: " + agent2.Name + " [GEN " + agent2.Generation + "]", s * 1.05f, 0.08f, 0.25f, 0.16f, 0.4f, 1f, 0.7f);
+			py += 26f;
+
+			ui.Text(bx + 14f, py, agent2.G.Describe(), s * 0.88f, 0.9f, 1f, 0.9f, 1f);
+			py += 18f;
+			ui.Text(bx + 14f, py, string.Format(CultureInfo.InvariantCulture, "FIT {0:0}   HP {1:0}/100   AGE {2:0}S   DEATHS {3}   CARRY {4}/{5}", agent2.Fitness, agent2.Health, agent2.Age, agent2.Deaths, agent2.CarryCount, agent2.CarryLimit), s * 0.82f, 0.85f, 0.9f, 1f, 1f);
+			py += 17f;
+			ui.Text(bx + 14f, py, string.Concat("STATE: ", agent2.Action, " - ", agent2.Status), s * 0.82f, 1f, 0.9f, 0.55f, 1f);
+			py += 17f;
+			ui.Text(bx + 14f, py, "METRICS: MINED " + agent2.MinedTotal + " | PLACED " + agent2.PlacementsTotal + " | CRAFTED " + agent2.CraftsTotal + " | HUTS " + agent2.StructuresBuilt + " | ORE " + agent2.OresFound, s * 0.78f, 0.75f, 0.88f, 0.95f, 1f);
+			py += 22f;
+
+			ui.Text(bx + 14f, py, "EVOLVED GENOMIC TRAITS", s * 0.9f, 0.95f, 0.8f, 1f, 1f);
+			py += 18f;
 			for (int i = 0; i < 12; i++)
 			{
-				float num4 = agent2.G.V[i];
-				float num5 = 150f;
-				ui.Text(num + 12f, num3, Gene.Name(i), s * 0.85f, 0.85f, 0.9f, 1f, 0.95f);
-				ui.Rect(num + 130f, num3 + 2f, num5, 7f, 0.15f, 0.15f, 0.2f, 1f);
-				ui.Rect(num + 130f, num3 + 2f, num5 * num4, 7f, 0.4f + num4 * 0.5f, 0.8f - num4 * 0.3f, 0.4f, 1f);
-				ui.Text(num + 130f + num5 + 8f, num3, (num4 * 100f).ToString("0", CultureInfo.InvariantCulture), s * 0.85f, 1f, 1f, 1f, 0.95f);
-				num3 += 12f;
+				float val = agent2.G.V[i];
+				float barLen = 160f;
+				ui.Text(bx + 14f, py, Gene.Name(i), s * 0.78f, 0.82f, 0.88f, 0.95f, 0.95f);
+				ui.PixelBar(bx + 140f, py + 1f, barLen, 8f, val, 0.4f + val * 0.5f, 0.8f - val * 0.3f, 0.4f, 0.95f);
+				ui.Text(bx + 140f + barLen + 8f, py, (val * 100f).ToString("0", CultureInfo.InvariantCulture) + "%", s * 0.78f, 1f, 1f, 1f, 0.95f);
+				py += 13f;
 			}
-			num3 += 8f;
-			ui.Text(num + 12f, num3, "LEARNED SKILLS (REINFORCEMENT)", s, 0.9f, 0.8f, 1f, 1f);
-			num3 += 18f;
-			string[] array = new string[6]
-			{
-				"MINING",
-				"BUILDING",
-				"COMBAT",
-				"NAVIGATION",
-				"CRAFTING",
-				"SURVIVAL"
-			};
-			float[] array2 = new float[6]
+
+			py += 8f;
+			ui.Text(bx + 14f, py, "REINFORCEMENT SKILLS", s * 0.9f, 0.4f, 0.85f, 1f, 1f);
+			py += 18f;
+			string[] skills = new string[6] { "MINING", "BUILDING", "COMBAT", "NAVIGATION", "CRAFTING", "SURVIVAL" };
+			float[] skillVals = new float[6]
 			{
 				agent2.Brain.SkillMining,
 				agent2.Brain.SkillBuilding,
@@ -907,39 +1011,20 @@ namespace VoxelAI.Game
 				agent2.Brain.SkillCrafting,
 				agent2.Brain.SkillSurvival
 			};
-			for (int j = 0; j < array.Length; j++)
+			for (int j = 0; j < skills.Length; j++)
 			{
-				float num6 = 150f;
-				ui.Text(num + 12f, num3, array[j], s * 0.85f, 0.85f, 0.9f, 1f, 0.95f);
-				ui.Rect(num + 130f, num3 + 2f, num6, 7f, 0.15f, 0.15f, 0.2f, 1f);
-				ui.Rect(num + 130f, num3 + 2f, num6 * M.Clamp(array2[j], 0f, 1f), 7f, 0.3f, 0.6f + array2[j] * 0.4f, 1f, 1f);
-				num3 += 12f;
+				float sBarLen = 160f;
+				ui.Text(bx + 14f, py, skills[j], s * 0.78f, 0.82f, 0.88f, 0.95f, 0.95f);
+				ui.PixelBar(bx + 140f, py + 1f, sBarLen, 8f, M.Clamp(skillVals[j], 0f, 1f), 0.3f, 0.6f + skillVals[j] * 0.4f, 1f, 0.95f);
+				ui.Text(bx + 140f + sBarLen + 8f, py, (skillVals[j] * 100f).ToString("0", CultureInfo.InvariantCulture) + "%", s * 0.78f, 1f, 1f, 1f, 0.95f);
+				py += 13f;
 			}
-			num3 += 10f;
-			ui.Text(num + 12f, num3, "LEARNED Q VALUES (ACTION VALUE)", s, 0.9f, 0.8f, 1f, 1f);
-			num3 += 18f;
-			for (int k = 0; k < 14; k++)
-			{
-				Act act = (Act)k;
-				if (act != Act.Count)
-				{
-					float num7 = agent2.Brain.Q[k];
-					float num8 = 150f;
-					float num9 = M.Clamp((num7 + 1f) / 2f, 0f, 1f);
-					ui.Text(num + 12f, num3, act.ToString(), s * 0.85f, 0.85f, 0.9f, 1f, 0.95f);
-					ui.Rect(num + 130f, num3 + 2f, num8, 7f, 0.15f, 0.15f, 0.2f, 1f);
-					ui.Rect(num + 130f, num3 + 2f, num8 * num9, 7f, 1f, 0.6f + num9 * 0.3f, 0.2f, 1f);
-					ui.Text(num + 130f + num8 + 8f, num3, num7.ToString("0.00", CultureInfo.InvariantCulture), s * 0.85f, 1f, 1f, 1f, 0.95f);
-					num3 += 11f;
-				}
-			}
-			num3 += 6f;
-			ui.Text(num + 12f, num3, "DANGER MEMORY " + agent2.Brain.Danger.Count + " CELLS   LAST CAUSE: " + agent2.LastDamageCause, s * 0.85f, 1f, 0.7f, 0.7f, 0.95f);
-			num3 += 16f;
-			ui.Text(num + 12f, num3, "SPECIES: " + AI.Species.DeathSummary(), s * 0.8f, 0.9f, 0.8f, 0.8f, 0.95f);
-			num3 += 16f;
-			string str = ((agent2.Brain.Log.Count <= 0) ? "-" : agent2.Brain.Log[agent2.Brain.Log.Count - 1]);
-			ui.Text(num + 12f, num3, "LAST: " + str, s * 0.8f, 0.8f, 0.85f, 0.9f, 0.95f);
+
+			py += 10f;
+			ui.Text(bx + 14f, py, "DANGER MEMORY: " + agent2.Brain.Danger.Count + " CELLS | LAST CAUSE: " + agent2.LastDamageCause, s * 0.78f, 1f, 0.65f, 0.65f, 0.95f);
+			py += 16f;
+			string lastLog = ((agent2.Brain.Log.Count <= 0) ? "IDLE" : agent2.Brain.Log[agent2.Brain.Log.Count - 1]);
+			ui.Text(bx + 14f, py, "CORTEX LOG: " + lastLog, s * 0.76f, 0.75f, 0.85f, 0.9f, 0.95f);
 		}
 
 		private void DrawHelp(Ui2D ui, float s)

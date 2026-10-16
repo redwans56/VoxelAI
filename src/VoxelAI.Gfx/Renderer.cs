@@ -125,6 +125,9 @@ namespace VoxelAI.Gfx
 				num3 = 0.52f;
 				param = 0.075f;
 			}
+			GL.DepthMask(true);
+			GL.Enable(2929u);
+			GL.DepthFunc(515u);
 			GL.ClearColor(num, num2, num3, 1f);
 			GL.ClearDepth(1.0);
 			GL.Clear(16640u);
@@ -336,13 +339,24 @@ namespace VoxelAI.Gfx
 		public void DrawChunks(VoxelAI.World.World world, Camera cam, List<Chunk> chunks, bool liquidPass)
 		{
 			GL.BindTexture(3553u, Atlas.TextureId);
+			GL.Enable(3553u);
+			GL.Enable(2929u);
 			if (liquidPass)
 			{
 				GL.Enable(3042u);
 				GL.BlendFunc(770u, 771u);
 				GL.DepthMask(false);
 				GL.Disable(3008u);
-				GL.Disable(2884u);
+				GL.Enable(2884u);
+				GL.CullFace(1029u);
+			}
+			else
+			{
+				GL.Disable(3042u);
+				GL.DepthMask(true);
+				GL.Enable(3008u);
+				GL.Enable(2884u);
+				GL.CullFace(1029u);
 			}
 			int num = 0;
 			int num2 = 0;
@@ -487,55 +501,152 @@ namespace VoxelAI.Gfx
 
 		public void DrawCreatures(VoxelAI.World.World world, Camera cam, AISystem ai)
 		{
+			GL.Enable(2929u);
+			GL.DepthMask(true);
+			GL.Disable(3042u);
+			GL.Enable(2884u);
+			GL.CullFace(1029u);
 			GL.BindTexture(3553u, 0);
 			GL.Disable(3553u);
+
 			for (int i = 0; i < world.Creatures.Count; i++)
 			{
 				Creature creature = world.Creatures[i];
-				if (creature.Alive && cam.PointVisible(creature.Position, 3f))
+				if (!creature.Alive || !cam.PointVisible(creature.Position, 3f))
 				{
-					GL.PushMatrix();
-					GL.Translatef(creature.Position.X, creature.Position.Y - creature.Size.Y * 0.5f, creature.Position.Z);
-					GL.Rotatef(creature.Yaw * (180f / (float)Math.PI), 0f, 1f, 0f);
-					int v = 0;
-					float num = (float)Math.Sin(creature.WalkPhase) * 0.35f;
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.28f, 0f, -0.12f), new Vec3(-0.08f, 0.45f + num * 0.1f, 0.12f), creature.BodyR * 0.7f, creature.BodyG * 0.7f, creature.BodyB * 0.7f, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.08f, 0f, -0.12f), new Vec3(0.28f, 0.45f - num * 0.1f, 0.12f), creature.BodyR * 0.7f, creature.BodyG * 0.7f, creature.BodyB * 0.7f, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.3f, 0.42f, -0.18f), new Vec3(0.3f, 1.05f, 0.18f), creature.BodyR, creature.BodyG, creature.BodyB, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.45f, 0.45f, -0.1f), new Vec3(-0.3f, 0.95f - num * 0.2f, 0.1f), creature.BodyR * 1.1f, creature.BodyG * 1.1f, creature.BodyB * 1.1f, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.3f, 0.45f, -0.1f), new Vec3(0.45f, 0.95f + num * 0.2f, 0.1f), creature.BodyR * 1.1f, creature.BodyG * 1.1f, creature.BodyB * 1.1f, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.25f, 1.05f, -0.25f), new Vec3(0.25f, 1.55f, 0.25f), creature.HeadR, creature.HeadG, creature.HeadB, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.15f, 1.3f, 0.25f), new Vec3(-0.05f, 1.4f, 0.27f), 0.08f, 0.08f, 0.1f, 1f);
-					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.05f, 1.3f, 0.25f), new Vec3(0.15f, 1.4f, 0.27f), 0.08f, 0.08f, 0.1f, 1f);
-					DrawArray3D(boxBuf, v / 8, false);
-					GL.PopMatrix();
+					continue;
 				}
+
+				Agent agent = null;
+				if (ai != null)
+				{
+					for (int a = 0; a < ai.Agents.Count; a++)
+					{
+						if (ai.Agents[a].Body == creature)
+						{
+							agent = ai.Agents[a];
+							break;
+						}
+					}
+				}
+
+				GL.PushMatrix();
+				GL.Translatef(creature.Position.X, creature.Position.Y - creature.Size.Y * 0.5f, creature.Position.Z);
+				GL.Rotatef(creature.Yaw * (180f / (float)Math.PI), 0f, 1f, 0f);
+
+				int v = 0;
+				float walkSpeed = (float)Math.Sqrt(creature.Velocity.X * creature.Velocity.X + creature.Velocity.Z * creature.Velocity.Z);
+				bool isMoving = (walkSpeed > 0.05f);
+				float walkAngle = (float)Math.Sin(creature.WalkPhase) * (isMoving ? 0.55f : 0.05f);
+				float bob = Math.Abs((float)Math.Sin(creature.WalkPhase)) * (isMoving ? 0.06f : 0.01f);
+
+				float legL = walkAngle;
+				float legR = -walkAngle;
+				float armL = -walkAngle * 0.75f;
+				float armR = walkAngle * 0.75f;
+				bool isWorking = (agent != null && (agent.Action == Act.Mine || agent.Action == Act.Build || agent.Action == Act.Fight));
+				if (isWorking)
+				{
+					armR = (float)Math.Sin((agent != null ? agent.Age : Time2) * 16f) * 0.85f - 0.45f;
+				}
+
+				// 1. Boots (Dark leather)
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.25f, 0f, -0.15f + legL * 0.22f), new Vec3(-0.07f, 0.16f, 0.15f + legL * 0.22f), 0.18f, 0.18f, 0.22f, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.07f, 0f, -0.15f + legR * 0.22f), new Vec3(0.25f, 0.16f, 0.15f + legR * 0.22f), 0.18f, 0.18f, 0.22f, 1f);
+
+				// 2. Pants / Legs
+				float legR_col = creature.BodyR * 0.45f + 0.1f;
+				float legG_col = creature.BodyG * 0.45f + 0.12f;
+				float legB_col = creature.BodyB * 0.55f + 0.18f;
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.24f, 0.16f, -0.12f + legL * 0.18f), new Vec3(-0.08f, 0.54f + bob, 0.12f + legL * 0.18f), legR_col, legG_col, legB_col, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.08f, 0.16f, -0.12f + legR * 0.18f), new Vec3(0.24f, 0.54f + bob, 0.12f + legR * 0.18f), legR_col, legG_col, legB_col, 1f);
+
+				// 3. Belt with Gold Buckle
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.27f, 0.54f + bob, -0.16f), new Vec3(0.27f, 0.62f + bob, 0.16f), 0.16f, 0.12f, 0.08f, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.07f, 0.55f + bob, 0.155f), new Vec3(0.07f, 0.61f + bob, 0.175f), 0.95f, 0.8f, 0.2f, 1f);
+
+				// 4. Torso / Shirt
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.28f, 0.62f + bob, -0.16f), new Vec3(0.28f, 1.15f + bob, 0.16f), creature.BodyR, creature.BodyG, creature.BodyB, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.09f, 1.02f + bob, 0.155f), new Vec3(0.09f, 1.15f + bob, 0.17f), creature.BodyR * 1.35f, creature.BodyG * 1.35f, creature.BodyB * 1.35f, 1f);
+
+				// 5. Left Arm
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.43f, 0.78f + bob, -0.11f - armL * 0.22f), new Vec3(-0.28f, 1.12f + bob, 0.11f - armL * 0.22f), creature.BodyR, creature.BodyG, creature.BodyB, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.42f, 0.46f + bob, -0.10f - armL * 0.38f), new Vec3(-0.29f, 0.78f + bob, 0.10f - armL * 0.38f), creature.HeadR, creature.HeadG, creature.HeadB, 1f);
+
+				// 6. Right Arm
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.28f, 0.78f + bob, -0.11f + armR * 0.22f), new Vec3(0.43f, 1.12f + bob, 0.11f + armR * 0.22f), creature.BodyR, creature.BodyG, creature.BodyB, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.29f, 0.46f + bob, -0.10f + armR * 0.42f), new Vec3(0.42f, 0.78f + bob, 0.10f + armR * 0.42f), creature.HeadR, creature.HeadG, creature.HeadB, 1f);
+
+				// 7. Right Hand Held Tool / Pickaxe
+				if (isWorking)
+				{
+					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.33f, 0.35f + bob, -0.05f + armR * 0.55f), new Vec3(0.38f, 0.85f + bob, 0.05f + armR * 0.55f), 0.55f, 0.35f, 0.18f, 1f);
+					v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.26f, 0.78f + bob, -0.22f + armR * 0.55f), new Vec3(0.45f, 0.86f + bob, 0.22f + armR * 0.55f), 0.78f, 0.82f, 0.92f, 1.2f);
+				}
+
+				// 8. Head (Skin tone)
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.22f, 1.15f + bob, -0.22f), new Vec3(0.22f, 1.55f + bob, 0.22f), creature.HeadR, creature.HeadG, creature.HeadB, 1f);
+
+				// 9. Stylish Hair / Cap
+				float hairR = 0.24f;
+				float hairG = 0.18f;
+				float hairB = 0.14f;
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.23f, 1.48f + bob, -0.23f), new Vec3(0.23f, 1.60f + bob, 0.23f), hairR, hairG, hairB, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.22f, 1.45f + bob, 0.21f), new Vec3(0.22f, 1.51f + bob, 0.30f), hairR * 1.2f, hairG * 1.2f, hairB * 1.2f, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.23f, 1.25f + bob, -0.24f), new Vec3(0.23f, 1.50f + bob, -0.15f), hairR, hairG, hairB, 1f);
+
+				// 10. Expressive Eyes (White sclera + dark pupils)
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.16f, 1.30f + bob, 0.215f), new Vec3(-0.04f, 1.42f + bob, 0.23f), 0.95f, 0.96f, 1f, 1.2f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.12f, 1.32f + bob, 0.225f), new Vec3(-0.05f, 1.39f + bob, 0.235f), 0.12f, 0.14f, 0.22f, 1f);
+
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.04f, 1.30f + bob, 0.215f), new Vec3(0.16f, 1.42f + bob, 0.23f), 0.95f, 0.96f, 1f, 1.2f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.05f, 1.32f + bob, 0.225f), new Vec3(0.12f, 1.39f + bob, 0.235f), 0.12f, 0.14f, 0.22f, 1f);
+
+				// 11. Cheek Blushes & Smile
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.17f, 1.24f + bob, 0.222f), new Vec3(-0.12f, 1.28f + bob, 0.227f), 0.95f, 0.5f, 0.5f, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(0.12f, 1.24f + bob, 0.222f), new Vec3(0.17f, 1.28f + bob, 0.227f), 0.95f, 0.5f, 0.5f, 1f);
+				v = MeshBuilder.BuildColoredBox(boxBuf, v, new Vec3(-0.06f, 1.21f + bob, 0.222f), new Vec3(0.06f, 1.24f + bob, 0.227f), 0.65f, 0.35f, 0.35f, 1f);
+
+				DrawArray3D(boxBuf, v / 8, false);
+
+				// Selected Crown / Marker
+				if (agent != null && agent.IsSelected)
+				{
+					int cv = 0;
+					float crownY = 1.76f + (float)Math.Sin(Time2 * 4f) * 0.08f;
+					cv = MeshBuilder.BuildColoredBox(boxBuf, cv, new Vec3(-0.12f, crownY, -0.12f), new Vec3(0.12f, crownY + 0.14f, 0.12f), 1f, 0.85f, 0.2f, 1.4f);
+					cv = MeshBuilder.BuildColoredBox(boxBuf, cv, new Vec3(-0.06f, crownY + 0.14f, -0.06f), new Vec3(0.06f, crownY + 0.22f, 0.06f), 0.2f, 0.9f, 1f, 1.5f);
+					DrawArray3D(boxBuf, cv / 8, false);
+				}
+
+				GL.PopMatrix();
 			}
+
 			if (ai != null)
 			{
-				Agent agent = null;
+				Agent agent2 = null;
 				for (int j = 0; j < ai.Agents.Count; j++)
 				{
 					if (ai.Agents[j].IsSelected)
 					{
-						agent = ai.Agents[j];
+						agent2 = ai.Agents[j];
 						break;
 					}
 				}
-				if (agent != null && !agent.Dead)
+				if (agent2 != null && !agent2.Dead)
 				{
-					Vec3 position = agent.Body.Position;
+					Vec3 position = agent2.Body.Position;
 					GL.Disable(3553u);
 					GL.Disable(2884u);
 					GL.Enable(3042u);
 					GL.DepthMask(false);
-					GL.LineWidth(2.5f);
-					GL.Color4f(1f, 0.95f, 0.2f, 0.85f);
+					GL.LineWidth(3f);
+					GL.Color4f(1f, 0.88f, 0.2f, 0.9f);
 					GL.Begin(2u);
 					for (int k = 0; k < 24; k++)
 					{
 						float num2 = (float)k / 24f * ((float)Math.PI * 2f);
-						GL.Vertex3f(position.X + (float)Math.Cos(num2) * 0.6f, position.Y - agent.Body.Size.Y * 0.5f + 0.03f, position.Z + (float)Math.Sin(num2) * 0.6f);
+						GL.Vertex3f(position.X + (float)Math.Cos(num2) * 0.65f, position.Y - agent2.Body.Size.Y * 0.5f + 0.04f, position.Z + (float)Math.Sin(num2) * 0.65f);
 					}
 					GL.End();
 					GL.LineWidth(1f);
@@ -549,7 +660,13 @@ namespace VoxelAI.Gfx
 
 		public void DrawItems(VoxelAI.World.World world, Camera cam)
 		{
+			GL.Enable(2929u);
+			GL.DepthMask(true);
+			GL.Disable(3042u);
+			GL.Enable(2884u);
+			GL.CullFace(1029u);
 			GL.BindTexture(3553u, Atlas.TextureId);
+			GL.Enable(3553u);
 			for (int i = 0; i < world.Items.Count; i++)
 			{
 				ItemEntity itemEntity = world.Items[i];
@@ -558,7 +675,9 @@ namespace VoxelAI.Gfx
 					GL.PushMatrix();
 					GL.Translatef(itemEntity.Position.X, itemEntity.Position.Y, itemEntity.Position.Z);
 					GL.Rotatef(itemEntity.Spin * 57.3f, 0f, 1f, 0f);
-					int num = MeshBuilder.BuildBlockCube(itemBuf, 0, new Vec3(-0.18f, -0.18f, -0.18f), 0.36f, itemEntity.Block, 1f);
+					float bob = (float)Math.Sin(itemEntity.Spin * 2.2f) * 0.05f + 0.07f;
+					GL.Translatef(0f, bob, 0f);
+					int num = MeshBuilder.BuildBlockCube(itemBuf, 0, new Vec3(-0.16f, -0.16f, -0.16f), 0.32f, itemEntity.Block, 1f);
 					DrawArray3D(itemBuf, num / 8, true);
 					GL.PopMatrix();
 				}
