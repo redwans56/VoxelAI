@@ -41,3 +41,17 @@ jobs:
             bin/Release/VoxelAI.exe
             VoxelAI.exe
           if-no-files-found: error
+
+      - name: Commit compiled binary back to branch
+        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f VoxelAI.exe bin/Release/VoxelAI.exe
+          if (git diff --cached --quiet) {
+            Write-Host "Compiled binary unchanged - nothing to commit"
+            exit 0
+          }
+          git commit -m "ci: refresh compiled VoxelAI.exe [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}"
