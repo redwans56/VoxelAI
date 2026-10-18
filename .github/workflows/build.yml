@@ -9,6 +9,8 @@ jobs:
   build-windows:
     name: Compile VoxelAI (Windows x86)
     runs-on: windows-latest
+    permissions:
+      contents: write
     env:
       CI: "1"
     steps:
@@ -54,4 +56,5 @@ jobs:
             exit 0
           }
           git commit -m "ci: refresh compiled VoxelAI.exe [skip ci]"
+          git pull --rebase origin "${{ github.ref_name }}"
           git push origin "HEAD:${{ github.ref_name }}"
