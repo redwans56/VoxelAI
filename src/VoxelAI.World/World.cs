@@ -285,6 +285,10 @@ namespace VoxelAI.World
 			}
 			int x2 = x - chunk.BaseX;
 			int z2 = z - chunk.BaseZ;
+			if (chunk.ColumnsReady)
+			{
+				return chunk.ColSurface[z2 * 16 + x2];
+			}
 			for (int num = 127; num >= 0; num--)
 			{
 				byte b = chunk.Blocks[Chunk.Index(x2, num, z2)];
@@ -305,6 +309,10 @@ namespace VoxelAI.World
 			}
 			int x2 = x - chunk.BaseX;
 			int z2 = z - chunk.BaseZ;
+			if (chunk.ColumnsReady)
+			{
+				return chunk.ColGround[z2 * 16 + x2];
+			}
 			for (int num = 127; num >= 0; num--)
 			{
 				byte b = chunk.Blocks[Chunk.Index(x2, num, z2)];
@@ -728,6 +736,10 @@ namespace VoxelAI.World
 			}
 			chunk.Blocks[num] = b;
 			chunk.Dirty = true;
+			if (chunk.ColumnsReady)
+			{
+				chunk.RecomputeColumn(x - chunk.BaseX, z - chunk.BaseZ);
+			}
 			MarkMeshDirtyAt(x, y, z);
 			UpdateLightAt(x, y, z, b2, b);
 			FlushLightDirty();
@@ -1242,7 +1254,7 @@ namespace VoxelAI.World
 				return 0;
 			}
 			int num = 0;
-			long num2 = Environment.TickCount;
+			int num2 = Environment.TickCount;
 			float fx = focus.X;
 			float fz = focus.Z;
 			dirtyMeshes.Sort(delegate(Chunk a, Chunk b)
@@ -1251,16 +1263,24 @@ namespace VoxelAI.World
 				float value = ((float)(b.BaseX + 8) - fx) * ((float)(b.BaseX + 8) - fx) + ((float)(b.BaseZ + 8) - fz) * ((float)(b.BaseZ + 8) - fz);
 				return num3.CompareTo(value);
 			});
-			while (dirtyMeshes.Count > 0 && (float)(Environment.TickCount - num2) < budgetMs)
+			int i = 0;
+			while (i < dirtyMeshes.Count && (float)(Environment.TickCount - num2) < budgetMs)
 			{
-				Chunk chunk = dirtyMeshes[0];
-				dirtyMeshes.RemoveAt(0);
+				Chunk chunk = dirtyMeshes[i++];
 				dirtySet.Remove(Key(chunk.Cx, chunk.Cz));
 				if (!chunk.PendingVboDelete && chunk.Generated && chunk.Lit)
 				{
 					buildMesh(chunk);
 					num++;
 				}
+			}
+			if (i >= dirtyMeshes.Count)
+			{
+				dirtyMeshes.Clear();
+			}
+			else if (i > 0)
+			{
+				dirtyMeshes.RemoveRange(0, i);
 			}
 			return num;
 		}

@@ -25,84 +25,145 @@ namespace VoxelAI.AI
 
 		public float SkillSurvival;
 
-		public readonly Dictionary<Vec3i, float> Danger = new Dictionary<Vec3i, float>();
+		public float LearningRate = 0.12f;
+
+		public float Discount = 0.55f;
+
+		private readonly Dictionary<Vec3i, float> dangerField = new Dictionary<Vec3i, float>();
 
 		public readonly List<string> Log = new List<string>(8);
 
-		public float LearningRate = 0.12f;
+		private readonly List<Vec3i> decayKeys = new List<Vec3i>(256);
 
-		private readonly List<Vec3i> decayKeys = new List<Vec3i>();
+		private readonly List<float> decayValues = new List<float>(256);
 
-		private readonly List<float> decayValues = new List<float>();
+		private const int DangerCellSize = 4;
+
+		private const int MaxDangerCells = 6000;
+
+		public int DangerCellCount
+		{
+			get
+			{
+				return dangerField.Count;
+			}
+		}
 
 		public void Reward(Act a, float reward)
 		{
-			float learningRate = LearningRate;
-			Q[(int)a] = Q[(int)a] + learningRate * (reward - Q[(int)a]);
-			Tries[(int)a]++;
+			int i = (int)a;
+			float maxNext = 0f;
+			for (int j = 0; j < 14; j++)
+			{
+				if (Q[j] > maxNext)
+				{
+					maxNext = Q[j];
+				}
+			}
+			float target = reward + Discount * (maxNext - Q[i]);
+			Q[i] = M.Clamp(Q[i] + LearningRate * (target - Q[i]), -2f, 4f);
+			Tries[i]++;
 			if (reward > 0.02f)
 			{
-				Skill[(int)a] = M.Clamp(Skill[(int)a] + reward * 0.02f, 0f, 1f);
+				Skill[i] = M.Clamp(Skill[i] + reward * 0.02f, 0f, 1f);
 			}
+		}
+
+		private static Vec3i DangerKey(int x, int y, int z)
+		{
+			return new Vec3i(M.FloorDiv(x, DangerCellSize), M.FloorDiv(y, DangerCellSize), M.FloorDiv(z, DangerCellSize));
 		}
 
 		public void MarkDanger(int x, int y, int z, float amount)
 		{
-			Vec3i key = new Vec3i(x, y, z);
-			float value;
-			Danger.TryGetValue(key, out value);
-			Danger[key] = M.Clamp(value + amount, 0f, 1f);
-		}
-
-		public void DecayDanger(float dt)
-		{
-			if (Danger.Count == 0)
+			if (amount <= 0f)
 			{
 				return;
 			}
-			decayKeys.Clear();
-			decayValues.Clear();
-			foreach (KeyValuePair<Vec3i, float> item in Danger)
-			{
-				decayKeys.Add(item.Key);
-				decayValues.Add(item.Value);
-			}
-			int count = Danger.Count;
-			for (int i = 0; i < decayKeys.Count; i++)
-			{
-				float num = decayValues[i] - dt * 0.006f;
-				if (num <= 0.02f)
-				{
-					Danger.Remove(decayKeys[i]);
-				}
-				else
-				{
-					Danger[decayKeys[i]] = num;
-				}
-			}
-			if (Danger.Count != count && count <= 0)
-			{
-			}
-		}
-
-		public float DangerAt(int x, int y, int z)
-		{
-			float num = 0f;
+			Vec3i center = DangerKey(x, y, z);
 			for (int i = -1; i <= 1; i++)
 			{
 				for (int j = -1; j <= 1; j++)
 				{
 					for (int k = -1; k <= 1; k++)
 					{
+						float w = ((i == 0 && j == 0 && k == 0) ? 1f : (((i * i + j * j + k * k) == 1) ? 0.7f : 0.45f));
+						Vec3i key = new Vec3i(center.X + i, center.Y + j, center.Z + k);
 						float value;
-						if (Danger.TryGetValue(new Vec3i(x + i, y + j, z + k), out value) && value > num)
+						dangerField.TryGetValue(key, out value);
+						float num = M.Clamp(value + amount * w, 0f, 1f);
+						if (num > value)
 						{
-							num = value;
+							dangerField[key] = num;
 						}
 					}
 				}
 			}
-			return num;
+			if (dangerField.Count > MaxDangerCells)
+			{
+				PruneDanger();
+			}
+		}
+
+		private void PruneDanger()
+		{
+			decayKeys.Clear();
+			foreach (KeyValuePair<Vec3i, float> item in dangerField)
+			{
+				if (item.Value < 0.22f)
+				{
+					decayKeys.Add(item.Key);
+				}
+			}
+			for (int i = 0; i < decayKeys.Count; i++)
+			{
+				dangerField.Remove(decayKeys[i]);
+			}
+			if (dangerField.Count > MaxDangerCells)
+			{
+				dangerField.Clear();
+			}
+		}
+
+		public void DecayDanger(float dt)
+		{
+			if (dangerField.Count == 0)
+			{
+				return;
+			}
+			decayKeys.Clear();
+			decayValues.Clear();
+			foreach (KeyValuePair<Vec3i, float> item in dangerField)
+			{
+				decayKeys.Add(item.Key);
+				decayValues.Add(item.Value);
+			}
+			for (int i = 0; i < decayKeys.Count; i++)
+			{
+				float num = decayValues[i] - dt * 0.006f;
+				if (num <= 0.02f)
+				{
+					dangerField.Remove(decayKeys[i]);
+				}
+				else
+				{
+					dangerField[decayKeys[i]] = num;
+				}
+			}
+		}
+
+		public float DangerAt(int x, int y, int z)
+		{
+			if (dangerField.Count == 0)
+			{
+				return 0f;
+			}
+			float value;
+			if (dangerField.TryGetValue(DangerKey(x, y, z), out value))
+			{
+				return value;
+			}
+			return 0f;
 		}
 
 		public void Note(string s)
@@ -120,6 +181,7 @@ namespace VoxelAI.AI
 			{
 				child.Q[i] = Q[i] * fraction + (1f - fraction) * 0.1f + r.RangeF(-0.02f, 0.02f);
 				child.Skill[i] = Skill[i] * (fraction + 0.2f);
+				child.Tries[i] = Tries[i] / 2;
 			}
 			child.SkillMining = SkillMining * (fraction + 0.2f);
 			child.SkillBuilding = SkillBuilding * (fraction + 0.2f);
@@ -127,6 +189,8 @@ namespace VoxelAI.AI
 			child.SkillNavigation = SkillNavigation * (fraction + 0.2f);
 			child.SkillCrafting = SkillCrafting * (fraction + 0.2f);
 			child.SkillSurvival = SkillSurvival * (fraction + 0.2f);
+			child.LearningRate = LearningRate;
+			child.Discount = Discount;
 		}
 	}
 }

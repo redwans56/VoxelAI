@@ -302,6 +302,7 @@ namespace VoxelAI.AI
 				return false;
 			}
 			float num = float.MaxValue;
+			bool has = false;
 			for (int i = 0; i < value.Count; i++)
 			{
 				if (World.GetBlock(value[i].X, value[i].Y, value[i].Z) != block)
@@ -315,9 +316,10 @@ namespace VoxelAI.AI
 				{
 					num = num2;
 					found = value[i];
+					has = true;
 				}
 			}
-			return found != Vec3i.Zero;
+			return has;
 		}
 
 		private Agent PickParent(float ignoreBelowFitness)
@@ -367,6 +369,10 @@ namespace VoxelAI.AI
 			a.Body.Position = FindSpawnNear(a.AnchorHome, a.Id);
 			a.Body.Velocity = Vec3.Zero;
 			a.Health = 100f;
+			a.Breath = Agent.MaxBreath;
+			a.LastDamageAge = -99f;
+			a.MotionTimer = 0f;
+			a.SwimTimer = 0f;
 			a.G = genome;
 			a.Brain = brainState;
 			a.Generation = Math.Max(a.Generation, Species.Generation + 1);
@@ -438,6 +444,7 @@ namespace VoxelAI.AI
 				agent.Brain = brainState;
 				agent.SessionScore = 0f;
 				agent.Health = 100f;
+				agent.Breath = Agent.MaxBreath;
 				agent.DamageTaken = 0f;
 				agent.AnchorHome = FindSpawnNear(agent.AnchorHome, agent.Id + (int)evoTimer);
 				Species.Generation = Math.Max(Species.Generation, agent.Generation);
@@ -580,6 +587,18 @@ namespace VoxelAI.AI
 						if (array2.Length > 10)
 						{
 							Species.DeathsCombat = ParseInt(array2[10], 0);
+						}
+						if (array2.Length > 11)
+						{
+							Species.ExplorationRadius = ParseFloat(array2[11], 48f);
+							if (Species.ExplorationRadius < 16f || Species.ExplorationRadius > 128f)
+							{
+								Species.ExplorationRadius = 48f;
+							}
+						}
+						if (array2.Length > 12)
+						{
+							Species.NightShelter = ParseFloat(array2[12], 0f);
 						}
 					}
 				}

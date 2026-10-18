@@ -360,9 +360,9 @@ namespace VoxelAI.World
 					}
 				}
 			}
-			if (array.Length > v + 1024)
+			if (array.Length > v * 3 + 4096)
 			{
-				Array.Resize(ref array, Math.Max(v, 8));
+				Array.Resize(ref array, Math.Max(v + 1024, 256));
 			}
 			if (liquidPass)
 			{
@@ -403,7 +403,11 @@ namespace VoxelAI.World
 			int num6 = wz + Normal[f][2];
 			int num7 = TangentComponent[f, 0];
 			int num8 = TangentComponent[f, 1];
-			float[] array = new float[4];
+			float l0;
+			float l1;
+			float l2;
+			float l3;
+			l0 = (l1 = (l2 = (l3 = 0f)));
 			for (int i = 0; i < 4; i++)
 			{
 				float num9;
@@ -461,7 +465,22 @@ namespace VoxelAI.World
 					num26++;
 				}
 				float num27 = 1f - (float)num26 * 0.15f;
-				array[i] = LightLut[(num25 >= 0) ? ((num25 <= 15) ? num25 : 15) : 0] * num27 * num3;
+				float num28b = LightLut[(num25 >= 0) ? ((num25 <= 15) ? num25 : 15) : 0] * num27 * num3;
+				switch (i)
+				{
+				case 0:
+					l0 = num28b;
+					break;
+				case 1:
+					l1 = num28b;
+					break;
+				case 2:
+					l2 = num28b;
+					break;
+				default:
+					l3 = num28b;
+					break;
+				}
 			}
 			Ensure(ref buf, v, 48);
 			int[] order = Order;
@@ -483,7 +502,22 @@ namespace VoxelAI.World
 				buf[v + 2] = num31;
 				buf[v + 3] = num33;
 				buf[v + 4] = num34;
-				float num35 = array[num28];
+				float num35;
+				switch (num28)
+				{
+				case 0:
+					num35 = l0;
+					break;
+				case 1:
+					num35 = l1;
+					break;
+				case 2:
+					num35 = l2;
+					break;
+				default:
+					num35 = l3;
+					break;
+				}
 				buf[v + 5] = num35;
 				buf[v + 6] = num35;
 				buf[v + 7] = num35;

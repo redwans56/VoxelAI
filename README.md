@@ -269,6 +269,40 @@ When this project was retrieved from its initial build, it was plagued by severa
 * **Root Cause**: The immediate mode renderer vertex buffer was capped at 32,768 vertices.
 * **Fix**: Expanded buffer limits to 131,072 vertices in [`Renderer.cs`](src/VoxelAI.Gfx/Renderer.cs) with dynamic range clamping, ensuring vast viewing distances without stutter.
 
+### 6. Column-Height Cache: `GroundY` Scanning 128 Blocks Per Query
+* **Symptom**: AI-heavy scenes (10 sensing agents) burned CPU on terrain queries.
+* **Root Cause**: `World.GroundY` / `World.SurfaceY` rescanned up to 128 voxels per call, and agent sensing issued ~900 of them per decision.
+* **Fix**: Each [`Chunk`](src/VoxelAI.World/Chunk.cs) now keeps per-column ground/surface caches (`ColGround`/`ColSurface`) recomputed only when a block in that column changes — turns every height query into an O(1) array read.
+
+### 7. Per-Face Heap Allocs & VBO Over-Upload in the Mesh Path
+* **Symptom**: GC pauses while streaming chunks; needless VRAM usage.
+* **Root Cause**: `MeshBuilder.EmitFace` allocated a `float[4]` for **every block face** (thousands per chunk rebuild), and `UploadChunk` pushed whole mesh arrays to the GPU instead of just the live vertex range.
+* **Fix**: Face brightness now uses stack locals, and [`GL.BufferData`](src/VoxelAI.Gfx/GL.cs) gained a count-limited overload so only `VertexCount * 8` floats are uploaded.
+
+### 8. Danger Memory: 27 Dictionary Probes → O(1) Coarse Field
+* **Symptom**: Decision ticks scaled badly with remembered hazards.
+* **Root Cause**: `BrainState.DangerAt` probed a 3×3×3 neighborhood (27 dictionary lookups) for every resource candidate of every agent.
+* **Fix**: [`BrainState`](src/VoxelAI.AI/BrainState.cs) now stores danger on a 4-block coarse grid (spatial falloff on write, single lookup on read) with pruning and decay — writes are rare, reads are cheap.
+
+### 9. The Drowning & Water-Caution Learning That Never Fired
+* **Symptom**: `SpeciesMemory.WaterCaution` never evolved; the `water` death cause and `Act.SwimUp`/`Act.Eat` actions were dead code.
+* **Root Cause**: Nothing ever reduced breath or dealt drowning damage, so the entire water-adaptation learning path was unreachable.
+* **Fix**: Agents now hold breath when their head is submerged, take drowning damage, panic-surface when air runs low — and the species actually learns caution from drown deaths. `Act.Eat` is now a "rest & heal" recovery behavior with passive health regeneration out of combat.
+
+### 10. Double Q-Reward on Explore & the Score-Farming Loop
+* **Symptom**: Agents spammed the Explore action because finishing a trip paid the Q-table twice and 1.5 free score.
+* **Root Cause**: `FinishAction` applied one generic reward and then a second Explore-specific `Brain.Reward`.
+* **Fix**: A single TD reward per action completion (now with discount factor + bounded Q), reduced explore payout, and a bandit-style curiosity bonus so under-tried actions still get explored.
+
+### 11. Missing Furnace Recipe & Lost Species Memory on Save/Load
+* **Symptom**: Craft decisions sometimes did nothing and fell back to wandering; `ExplorationRadius`/`NightShelter` silently reset on world reload.
+* **Root Cause**: `Utility(Act.Craft)` scored a furnace but `StartCraft` had no furnace recipe, and the species-line parser stopped early.
+* **Fix**: Cobblestone → furnace crafting implemented; species memory fully round-trips through the save format.
+
+### 12. Continuous Integration Build
+* **Symptom**: No way to verify the release binary builds from source without a Windows box.
+* **Fix**: [`.github/workflows/build.yml`](.github/workflows/build.yml) compiles the game on a Windows runner with the exact `csc.exe` toolchain used by `build.bat`, verifies the binary, and publishes it as a downloadable artifact.
+
 ---
 
 ## 🚀 Quick Start

@@ -11,7 +11,7 @@ if not exist "%CSC_PATH%" (
 
 if not exist "%CSC_PATH%" (
     echo [ERROR] Microsoft .NET Framework 4.0/4.8 csc.exe compiler not found!
-    pause
+    if not defined CI pause
     exit /b 1
 )
 

@@ -99,6 +99,12 @@ namespace VoxelAI.AI
 
 		public float SwimTimer;
 
+		public float Breath = 10f;
+
+		public const float MaxBreath = 10f;
+
+		public float RestTimer;
+
 		public int PlacementsTotal;
 
 		public int MinedTotal;
@@ -164,6 +170,16 @@ namespace VoxelAI.AI
 				return M.Clamp(Health / 100f, 0f, 1f);
 			}
 		}
+
+		private static readonly float[] SteerAngles = new float[6]
+		{
+			0.62f,
+			-0.62f,
+			1.15f,
+			-1.15f,
+			1.95f,
+			-1.95f
+		};
 
 		public int CarryCount
 		{
@@ -265,7 +281,7 @@ namespace VoxelAI.AI
 			SessionScore += dt * 0.01f;
 			Brain.DecayDanger(dt);
 			Brain.LearningRate = 0.05f + G[11] * 0.25f;
-			w.CollectItems(Body.Position, 1.3f, OnPickup);
+			w.CollectItems(Body.Position, 1.3f + G[3] * 0.8f, OnPickup);
 			PickUpNearbyDrops(w);
 			bool lava;
 			bool inLiquid = Physics.InLiquid(w, Body.Position, Body.Size * 0.5f, out lava);
@@ -273,6 +289,11 @@ namespace VoxelAI.AI
 			{
 				ReactToLava(w, dt);
 				return;
+			}
+			UpdateBreath(w, inLiquid, dt);
+			if (Health < 100f && Age - LastDamageAge > 8f && Action != Act.Flee)
+			{
+				Health = Math.Min(100f, Health + dt * (0.5f + Brain.SkillSurvival * 1.3f));
 			}
 			UpdateSwimming(w, inLiquid, dt);
 			if (Action == Act.Build && Plan != null)
@@ -290,24 +311,84 @@ namespace VoxelAI.AI
 			Execute(w, sys, dt);
 		}
 
+		private void UpdateBreath(VoxelAI.World.World w, bool inLiquid, float dt)
+		{
+			int hx = (int)Math.Floor(Body.Position.X);
+			int hy = (int)Math.Floor(Body.Position.Y + Body.Size.Y * 0.72f);
+			int hz = (int)Math.Floor(Body.Position.Z);
+			byte headBlock = w.GetBlock(hx, hy, hz);
+			bool headWet = headBlock == 12;
+			if (headWet)
+			{
+				Breath -= dt;
+				if (Breath <= 0f)
+				{
+					Breath = 0f;
+					Damage(7f * dt, "water", w);
+					Brain.SkillSurvival = M.Clamp(Brain.SkillSurvival + 0.015f * dt, 0f, 1f);
+				}
+			}
+			else if (Breath < MaxBreath)
+			{
+				Breath = Math.Min(MaxBreath, Breath + dt * 2.4f);
+			}
+			if (!inLiquid)
+			{
+				if (Breath < MaxBreath && !headWet)
+				{
+					Breath = Math.Min(MaxBreath, Breath + dt * 1.6f);
+				}
+			}
+		}
+
 		private void UpdateSwimming(VoxelAI.World.World w, bool inLiquid, float dt)
 		{
 			if (inLiquid)
 			{
 				SwimTimer += dt;
 				float num = Body.Position.Y + Body.Size.Y * 0.5f;
-				if (w.GetBlock((int)Math.Floor(Body.Position.X), (int)Math.Floor(num), (int)Math.Floor(Body.Position.Z)) != 0 || SwimTimer > 4f)
+				bool headStuck = w.GetBlock((int)Math.Floor(Body.Position.X), (int)Math.Floor(num), (int)Math.Floor(Body.Position.Z)) != 0;
+				if (headStuck || SwimTimer > 4f || Breath < 5.5f)
 				{
-					Body.Velocity.Y = Math.Max(Body.Velocity.Y, 3.2f);
+					Body.Velocity.Y = Math.Max(Body.Velocity.Y, 3.6f);
 					if (SwimTimer > 4f)
 					{
 						Brain.Note("surfacing");
+					}
+					if (Breath < 3.5f && Action != Act.Flee && Action != Act.Build)
+					{
+						SetAction(Act.SwimUp, "gasping for air", 3f);
 					}
 				}
 			}
 			else
 			{
 				SwimTimer = 0f;
+			}
+		}
+
+		private void PickUpNearbyDrops(VoxelAI.World.World w)
+		{
+			if (CarryCount >= CarryLimit)
+			{
+				return;
+			}
+			Vec3 center = Body.Position;
+			for (int i = 0; i < w.Items.Count; i++)
+			{
+				ItemEntity itemEntity = w.Items[i];
+				Vec3 a = center - itemEntity.Position;
+				float num = a.Length;
+				if (num < 2.8f && num > 0.05f)
+				{
+					Vec3 pull = a / num * (2.2f + G[3] * 2.2f);
+					itemEntity.Velocity.X = M.ExpSmooth(itemEntity.Velocity.X, pull.X, 6f, 0.05f);
+					itemEntity.Velocity.Z = M.ExpSmooth(itemEntity.Velocity.Z, pull.Z, 6f, 0.05f);
+					if (itemEntity.OnGround)
+					{
+						itemEntity.Velocity.Y = Math.Max(itemEntity.Velocity.Y, 1.4f);
+					}
+				}
 			}
 		}
 
@@ -360,10 +441,6 @@ namespace VoxelAI.AI
 			}
 		}
 
-		private void PickUpNearbyDrops(VoxelAI.World.World w)
-		{
-		}
-
 		private void SenseAll(VoxelAI.World.World w, AISystem sys)
 		{
 			SenseRadius = 8f + G[10] * 9f;
@@ -401,20 +478,23 @@ namespace VoxelAI.AI
 					{
 						continue;
 					}
-					for (int k = Math.Max(1, num5 - 3); k <= num5 + 2; k++)
+					if (i * i + j * j <= 81)
 					{
-						switch (w.GetBlock(x, k, z))
+						for (int k = Math.Max(1, num5 - 3); k <= num5 + 2; k++)
 						{
-						case 13:
-							hazardLavaNear = true;
-							if (nearestLava == Vec3i.Zero || Math.Abs(i) + Math.Abs(j) < Math.Abs(nearestLava.X - num) + Math.Abs(nearestLava.Z - num3))
+							switch (w.GetBlock(x, k, z))
 							{
-								nearestLava = new Vec3i(x, k, z);
+							case 13:
+								hazardLavaNear = true;
+								if (nearestLava == Vec3i.Zero || Math.Abs(i) + Math.Abs(j) < Math.Abs(nearestLava.X - num) + Math.Abs(nearestLava.Z - num3))
+								{
+									nearestLava = new Vec3i(x, k, z);
+								}
+								break;
+							case 12:
+								waterNear = true;
+								break;
 							}
-							break;
-						case 12:
-							waterNear = true;
-							break;
 						}
 					}
 					byte block = w.GetBlock(x, num5, z);
@@ -489,7 +569,7 @@ namespace VoxelAI.AI
 			{
 				cliffAhead = true;
 			}
-			hasFood = false;
+			hasFood = HealthFrac < 0.78f && Age - LastDamageAge > 5f && !hazardLavaNear;
 		}
 
 		private float CrowdPenalty(AISystem sys, int x, int y, int z)
@@ -769,7 +849,7 @@ namespace VoxelAI.AI
 				{
 					num2 = 1.7f;
 				}
-				else if (CountOf(9) >= 4 && CountOf(22) == 0)
+				else if (CountOf(4) >= 8 && CountOf(22) == 0)
 				{
 					num2 = 1.6f;
 				}
@@ -778,6 +858,10 @@ namespace VoxelAI.AI
 				num2 = -0.15f + G[7] * 1.2f;
 				num2 += ((BuildMaterials >= 12f) ? 0.85f : ((!(BuildMaterials >= 8f)) ? (-0.8f) : 0.45f));
 				num2 += ((StructuresBuilt != 0) ? 0.1f : 0.35f);
+				if (IsNight(w) && BuildMaterials >= 8f)
+				{
+					num2 += 0.5f + Species.NightShelter * 0.8f;
+				}
 				break;
 			case Act.Fight:
 				num2 = -0.4f + G[0] * 1f;
@@ -838,8 +922,15 @@ namespace VoxelAI.AI
 					num2 -= 0.6f;
 				}
 				break;
+			case Act.Eat:
+				num2 = ((!hasFood) ? (-2.2f) : (1.05f + (1f - HealthFrac) * 1.5f + Brain.SkillSurvival * 0.35f));
+				if (Action == Act.Eat && ActionTime < ActionLimit)
+				{
+					num2 += 0.8f;
+				}
+				break;
 			case Act.SwimUp:
-				num2 = -1.5f;
+				num2 = ((!Body.InWaterNow) ? (-1.5f) : ((Breath < 4.5f) ? 2.8f : 0.2f));
 				break;
 			case Act.Stuck:
 				num2 = -2f;
@@ -903,6 +994,7 @@ namespace VoxelAI.AI
 				{
 					float num2 = Utility(act2, w, sys);
 					num2 += (sys.Rng.NextFloat() - 0.5f) * 0.18f;
+					num2 += 0.22f / (1f + (float)Brain.Tries[i] * 0.045f);
 					if (num2 > num)
 					{
 						num = num2;
@@ -910,7 +1002,7 @@ namespace VoxelAI.AI
 					}
 				}
 			}
-			bool flag = Action == Act.Mine || Action == Act.DigDown || Action == Act.Build || Action == Act.Collect || Action == Act.Explore || Action == Act.Socialize || Action == Act.Fight || Action == Act.Flee;
+			bool flag = Action == Act.Mine || Action == Act.DigDown || Action == Act.Build || Action == Act.Collect || Action == Act.Explore || Action == Act.Socialize || Action == Act.Fight || Action == Act.Flee || Action == Act.Eat;
 			bool flag2 = act == Act.Craft || act == Act.PlaceLight;
 			if (flag && ActionTime < ActionLimit * 0.85f && !flag2)
 			{
@@ -921,7 +1013,7 @@ namespace VoxelAI.AI
 					{
 						HasBlockTarget = HasBlockTarget && w.GetBlock(TargetBlock.X, TargetBlock.Y, TargetBlock.Z) != 0;
 					}
-					if (HasBlockTarget || Action == Act.Build || HasMoveTarget)
+					if (HasBlockTarget || Action == Act.Build || HasMoveTarget || Action == Act.Eat)
 					{
 						return;
 					}
@@ -946,6 +1038,12 @@ namespace VoxelAI.AI
 				break;
 			case Act.Flee:
 				StartFleeFrom((nearestAgent == null) ? Body.Position : nearestAgent.Body.Position, "danger");
+				break;
+			case Act.Eat:
+				SetAction(Act.Eat, "resting to heal", 8f);
+				break;
+			case Act.SwimUp:
+				SetAction(Act.SwimUp, "swimming to the surface", 3f);
 				break;
 			case Act.Explore:
 				StartExplore(w, sys);
@@ -1098,6 +1196,16 @@ namespace VoxelAI.AI
 				CraftsTotal++;
 				SessionScore += 3f;
 				SetAction(Act.Craft, "built a crafting table", 1.2f);
+				Award(0.9f);
+			}
+			else if (CountOf(4) >= 8 && CountOf(22) == 0)
+			{
+				TakeItem(4, 8);
+				AddItem(22, 1);
+				CraftsTotal++;
+				SessionScore += 3f;
+				Brain.SkillCrafting = M.Clamp(Brain.SkillCrafting + 0.05f, 0f, 1f);
+				SetAction(Act.Craft, "built a furnace", 1.2f);
 				Award(0.9f);
 			}
 			else
@@ -1342,6 +1450,18 @@ namespace VoxelAI.AI
 			case Act.Stuck:
 				ExecuteUnstick(w, sys, dt);
 				break;
+			case Act.Eat:
+				ExecuteRest(w, dt);
+				break;
+			case Act.SwimUp:
+				Body.Velocity.Y = Math.Max(Body.Velocity.Y, 3.6f);
+				Body.Velocity.X *= 0.88f;
+				Body.Velocity.Z *= 0.88f;
+				if (!Body.InWaterNow || Breath > 7.5f || ActionTime > 2.5f)
+				{
+					FinishAction(true);
+				}
+				break;
 			case Act.Explore:
 			case Act.Collect:
 			case Act.Fight:
@@ -1359,6 +1479,28 @@ namespace VoxelAI.AI
 			if (ActionTime > ActionLimit)
 			{
 				FinishAction(false);
+			}
+		}
+
+		private void ExecuteRest(VoxelAI.World.World w, float dt)
+		{
+			Body.Velocity.X *= 0.7f;
+			Body.Velocity.Z *= 0.7f;
+			Health = Math.Min(100f, Health + dt * (1.8f + Brain.SkillSurvival * 1.6f + G[11] * 0.8f));
+			RestTimer += dt;
+			if (Health >= 96f || ActionTime > 7f || hazardLavaNear)
+			{
+				if (Health >= 96f)
+				{
+					Award(0.5f);
+					Brain.Note("rested and recovered");
+					Brain.SkillSurvival = M.Clamp(Brain.SkillSurvival + 0.03f, 0f, 1f);
+					FinishAction(true);
+				}
+				else
+				{
+					FinishAction(false);
+				}
 			}
 		}
 
@@ -1562,6 +1704,10 @@ namespace VoxelAI.AI
 				Award(2.2f);
 				Brain.SkillBuilding = M.Clamp(Brain.SkillBuilding + 0.12f, 0f, 1f);
 				Brain.Note("finished a shelter");
+				if (Species != null)
+				{
+					Species.NightShelter = M.Clamp(Species.NightShelter + 0.03f, 0f, 1f);
+				}
 				Plan = null;
 				FinishAction(true);
 				return;
@@ -1655,18 +1801,17 @@ namespace VoxelAI.AI
 
 		private void FinishAction(bool good)
 		{
-			if (ActionReward != 0f || good)
-			{
-				Brain.Reward(Action, ActionReward + ((!good) ? (-0.05f) : 0.12f));
-				ActionReward = 0f;
-			}
+			float num = ActionReward;
 			if (Action == Act.Explore)
 			{
-				SessionScore += 1.5f;
-				Award(0.15f);
-				Brain.Reward(Act.Explore, ActionReward + 0.15f);
-				ActionReward = 0f;
+				num += 0.15f;
+				SessionScore += 0.8f;
 			}
+			if (num != 0f || good)
+			{
+				Brain.Reward(Action, num + ((!good) ? (-0.05f) : 0.12f));
+			}
+			ActionReward = 0f;
 			Action = Act.Idle;
 			Status = "idle";
 			ActionTime = 0f;
@@ -1724,11 +1869,10 @@ namespace VoxelAI.AI
 			{
 				if (Blocks.Info((B)w.GetBlock(x, num + 1, z)).Solid)
 				{
-					for (int i = 0; i < 2; i++)
+					for (int i = 0; i < SteerAngles.Length; i++)
 					{
-						float num4 = ((i != 0) ? (-1f) : 1f);
-						float num5 = (float)Math.Cos(1.05f * num4);
-						float num6 = (float)Math.Sin(1.05f * num4);
+						float num5 = (float)Math.Cos(SteerAngles[i]);
+						float num6 = (float)Math.Sin(SteerAngles[i]);
 						Vec3 vec2 = new Vec3(a2.X * num5 - a2.Z * num6, 0f, a2.X * num6 + a2.Z * num5);
 						int x2 = (int)Math.Floor(Body.Position.X + vec2.X * 1f);
 						int z2 = (int)Math.Floor(Body.Position.Z + vec2.Z * 1f);

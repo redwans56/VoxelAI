@@ -1021,7 +1021,7 @@ namespace VoxelAI.Game
 			}
 
 			py += 10f;
-			ui.Text(bx + 14f, py, "DANGER MEMORY: " + agent2.Brain.Danger.Count + " CELLS | LAST CAUSE: " + agent2.LastDamageCause, s * 0.78f, 1f, 0.65f, 0.65f, 0.95f);
+			ui.Text(bx + 14f, py, "DANGER MEMORY: " + agent2.Brain.DangerCellCount + " CELLS | LAST CAUSE: " + agent2.LastDamageCause, s * 0.78f, 1f, 0.65f, 0.65f, 0.95f);
 			py += 16f;
 			string lastLog = ((agent2.Brain.Log.Count <= 0) ? "IDLE" : agent2.Brain.Log[agent2.Brain.Log.Count - 1]);
 			ui.Text(bx + 14f, py, "CORTEX LOG: " + lastLog, s * 0.76f, 0.75f, 0.85f, 0.9f, 0.95f);

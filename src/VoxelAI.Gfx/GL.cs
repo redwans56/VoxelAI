@@ -572,6 +572,15 @@ namespace VoxelAI.Gfx
 			}
 		}
 
+		public static void BufferData(uint target, float[] data, int floatCount, uint usage)
+		{
+			if (_bufferDataArr != null && data != null)
+			{
+				int n = ((floatCount < 0) ? 0 : ((floatCount > data.Length) ? data.Length : floatCount));
+				_bufferDataArr(target, n * 4, data, usage);
+			}
+		}
+
 		public static void DeleteBuffer(ref int buffer)
 		{
 			if (buffer != 0 && _deleteBuffers != null)

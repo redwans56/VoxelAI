@@ -312,13 +312,13 @@ namespace VoxelAI.Gfx
 					c.Vbo = GL.GenBuffer();
 				}
 				GL.BindBuffer(34962u, c.Vbo);
-				GL.BufferData(34962u, c.Mesh, 35044u);
+				GL.BufferData(34962u, c.Mesh, c.VertexCount * 8, 35044u);
 				if (c.LiquidVbo == 0)
 				{
 					c.LiquidVbo = GL.GenBuffer();
 				}
 				GL.BindBuffer(34962u, c.LiquidVbo);
-				GL.BufferData(34962u, c.LiquidMesh, 35044u);
+				GL.BufferData(34962u, c.LiquidMesh, c.LiquidVertexCount * 8, 35044u);
 				GL.BindBuffer(34962u, 0);
 				c.Mesh = EmptyMesh;
 				c.LiquidMesh = EmptyMesh;

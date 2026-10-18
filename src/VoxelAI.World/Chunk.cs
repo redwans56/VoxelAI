@@ -62,6 +62,12 @@ namespace VoxelAI.World
 
 		public int SurfaceY;
 
+		public readonly byte[] ColGround = new byte[256];
+
+		public readonly byte[] ColSurface = new byte[256];
+
+		public bool ColumnsReady;
+
 		public bool Generated
 		{
 			get
@@ -111,20 +117,53 @@ namespace VoxelAI.World
 		public void ComputeSurface()
 		{
 			SurfaceY = 0;
-			for (int num = 127; num >= 0; num--)
+			for (int i = 0; i < 16; i++)
 			{
-				for (int i = 0; i < 16; i++)
+				for (int j = 0; j < 16; j++)
 				{
-					for (int j = 0; j < 16; j++)
+					RecomputeColumn(j, i);
+					byte g = ColGround[i * 16 + j];
+					if (g > SurfaceY)
 					{
-						if (Blocks[Index(j, num, i)] != 0)
-						{
-							SurfaceY = num;
-							return;
-						}
+						SurfaceY = g;
+					}
+					byte s = ColSurface[i * 16 + j];
+					if (s > SurfaceY)
+					{
+						SurfaceY = s;
 					}
 				}
 			}
+			ColumnsReady = true;
+		}
+
+		public void RecomputeColumn(int lx, int lz)
+		{
+			if (lx < 0 || lx >= 16 || lz < 0 || lz >= 16)
+			{
+				return;
+			}
+			byte ground = 0;
+			byte surface = 0;
+			for (int y = 127; y >= 0; y--)
+			{
+				byte b = Blocks[Index(lx, y, lz)];
+				if (b == 0)
+				{
+					continue;
+				}
+				if (surface == 0 && b != 12)
+				{
+					surface = (byte)y;
+				}
+				if (b != 12 && b != 8 && b != 13)
+				{
+					ground = (byte)y;
+					break;
+				}
+			}
+			ColGround[lz * 16 + lx] = ground;
+			ColSurface[lz * 16 + lx] = surface;
 		}
 
 		public int ColumnTop(int x, int z)
